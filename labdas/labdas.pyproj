@@ -25,7 +25,7 @@
   <ItemGroup>
     <Compile Include="multil_filter\labda_filter.py" />
     <Compile Include="multil_filter\__init__.py" />
-    <Compile Include="multil_list\app.py" />
+    <Compile Include="multil_list\labda_list.py" />
     <Compile Include="multil_list\__init__.py" />
   </ItemGroup>
   <ItemGroup>
