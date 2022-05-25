@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32319.34
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "exceldata", "exceldata\exceldata.pyproj", "{AA9C0F82-97AD-43AA-8FF2-E39A17A96B2A}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "labdas", "labdas\labdas.pyproj", "{52D5142F-D002-4814-B251-C10CCDDDE06C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AA9C0F82-97AD-43AA-8FF2-E39A17A96B2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA9C0F82-97AD-43AA-8FF2-E39A17A96B2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52D5142F-D002-4814-B251-C10CCDDDE06C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52D5142F-D002-4814-B251-C10CCDDDE06C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C0F438DA-5C37-44FD-877C-456203B9A908}
+	EndGlobalSection
+EndGlobal

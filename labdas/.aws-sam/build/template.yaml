@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'multil-app
+
+  SAM Template for multil-app
+
+  '
+Globals:
+  Function:
+    Timeout: 10
+Resources:
+  MultiLappFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: MultiLappFunction
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Architectures:
+      - x86_64
+      Events:
+        MultiLapp:
+          Type: Api
+          Properties:
+            Path: /list
+            Method: get
+    Metadata:
+      SamResourceId: MultiLappFunction
+Outputs:
+  MultiLappApi:
+    Description: API Gateway endpoint URL for Prod stage for MultiLapp function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/list/
+  MultiLappFunction:
+    Description: MultiLapp Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - MultiLappFunction
+      - Arn
+  MultiLappFunctionIamRole:
+    Description: Implicit IAM Role created for MultiLapp function
+    Value:
+      Fn::GetAtt:
+      - MultiLappFunctionRole
+      - Arn
