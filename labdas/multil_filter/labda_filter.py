@@ -5,6 +5,7 @@ This implements the /filter functionality for the Multi-Lingual Meta analysis we
 """
 
 import json
+from logging import debug
 import os, sys
 import boto3
 from datetime import date, datetime
@@ -75,6 +76,15 @@ def lambda_handler(event, context):
 
     oErr = ErrHandle()
     body = dict(status="error", data="empty")
+    filter_spec_int = {}
+    filter_spec_str = {}
+    filter_keys_int = [
+        'observation', 'experiment_number', 'task_number', 'mean_age_2L1', 'mean-age_L1', 'n_2L1', 'n_L1'
+        ]
+    filter_keys_str = [
+        'peer_reviewed', 'target_language', 'other_language', 'task_type', 'task_detailed',
+        ]
+    filter_count = 0
 
     bFindBucket = False
     debug_level = 2
@@ -88,6 +98,37 @@ def lambda_handler(event, context):
 
         # Initialisations
         data = "none"
+
+        # Get any filter parameters
+        parameters = event['multiValueQueryStringParameters']
+        if not parameters is None:
+            for k, item in parameters.items():
+                bFound = False
+                item_first = item[0]
+                # Can we take over this filter as INT?   
+                try:             
+                    iItem = int(item_first)
+                    for key in filter_keys_int:
+                        if k == key:
+                            filter_spec_int[k] = iItem
+                            bFound = True
+                            filter_count += 1
+                            break
+                except:
+                    pass
+                if not bFound:
+                    for key in filter_keys_str:
+                        if k == key:
+                            filter_spec_str[k] = item_first
+                            bFound = True
+                            filter_count += 1
+                            break
+
+        if debug_level >=2:
+            for k,v in filter_spec_int.items():
+                print("Found integer filter {}: {}".format(k, v))
+            for k,v in filter_spec_str.items():
+                print("Found string filter {}: {}".format(k, v))
 
         # Find the right bucket
         if bFindBucket:
@@ -121,15 +162,40 @@ def lambda_handler(event, context):
 
             oAllData = json.loads(sAllData)
 
-        if debug_level >= 3: 
-            print("before dumps")
-            data = json.dumps(oAllData['Dataset'])
-            print("Data: {}".format(data))
+        # Possibly apply filtering
+        lst_input = oAllData['Dataset']
+        lst_output = []
+        if filter_count == 0:
+            lst_output = lst_input
         else:
-            data = json.dumps(oAllData['Dataset'])
+            for oRecord in lst_input:
+                bAnd = True
+                bOr = False
+
+                # Check if this record fits an integer match
+                for k, iValue in filter_spec_int.items():
+                    bValue = ( oRecord[k] == iValue)
+                    bAnd &= bValue
+                    bOr |= bValue
+
+                # Check if this record fits a string match: the filter value must be contained in the record
+                for k, sValue in filter_spec_str.items():
+                    bValue = ( sValue.lower() in oRecord[k].lower())
+                    bAnd &= bValue
+                    bOr |= bValue
+                # For the moment we are taking a logical 'AND'
+                if bAnd:
+                    lst_output.append(oRecord)
+
+        #if debug_level >= 3: 
+        #    print("before dumps")
+        #    data = json.dumps(oAllData['Dataset'])
+        #    print("Data: {}".format(data))
+        #else:
+        #    data = json.dumps(oAllData['Dataset'])
 
         # Build the body that is going to be returned
-        body = dict(status="ok", data=oAllData )
+        body = dict(status="ok", filters=filter_count, size=len(lst_output), data=lst_output )
     except:
         print("ERROR...")
         msg = oErr.get_error_message()
