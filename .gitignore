@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/labdas/.aws-sam/build/MultiLappFunction/settings.py
+/labdas/.aws-sam/build/MultiLappFilter/settings.py
+/labdas/.aws-sam/build/MultiLappFilter
+/labdas/multil_filter/settings.py
+/labdas/multil_list/settings.py

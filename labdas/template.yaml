@@ -25,6 +25,20 @@ Resources:
           Properties:
             Path: /list
             Method: get
+  MultiLappFilter:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: multil_filter/
+      Handler: labda_filter.lambda_handler
+      Runtime: python3.7
+      Architectures:
+        - x86_64
+      Events:
+        MultiLapp:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /filter
+            Method: get
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -34,9 +48,12 @@ Outputs:
     Description: "API Gateway endpoint URL for Prod stage for MultiLapp function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/list/"
   MultiLappFunction:
-    Description: "MultiLapp Lambda Function ARN"
+    Description: "MultiLapp LIST Lambda Function ARN"
     Value: !GetAtt MultiLappFunction.Arn
   MultiLappFunctionIamRole:
     Description: "Implicit IAM Role created for MultiLapp function"
     Value: !GetAtt MultiLappFunctionRole.Arn
 
+  MultiLappFilter:
+    Description: "MultiLapp FILTER Lambda Function ARN"
+    Value: !GetAtt MultiLappFilter.Arn
