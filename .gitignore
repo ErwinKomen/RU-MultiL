@@ -367,3 +367,4 @@ FodyWeavers.xsd
 /labdas/multil_filter/settings.py
 /labdas/multil_list/settings.py
 /labdas/.aws-sam
+/labdas/settings.py

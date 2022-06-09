@@ -1,9 +1,11 @@
-""" multil_filter
+""" multil_calc
 
-This implements the /filter functionality for the Multi-Lingual Meta analysis web application
+This implements the /calc functionality for the Multi-Lingual Meta analysis web application
+It performs calculations in R using the rpy2 package
 
 """
 
+import ctypes
 import json
 from logging import debug
 import os, sys
@@ -93,11 +95,6 @@ def lambda_handler(event, context):
         print("Setting up S3 resource")
         s3 = boto3.resource('s3', region_name='eu-north-1', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY )
 
-        print("Setting up S3 client")
-        client = boto3.client('s3',  region_name='eu-north-1', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
-
-        # Initialisations
-        data = "none"
 
         # Get any filter parameters
         parameters = event['multiValueQueryStringParameters']
@@ -130,37 +127,15 @@ def lambda_handler(event, context):
             for k,v in filter_spec_str.items():
                 print("Found string filter {}: {}".format(k, v))
 
-        # Find the right bucket
-        if bFindBucket:
-            s3_bucket = None
-            for bucket in s3.buckets.all():
-                if bucket.name == MULTIL_BUCKET:
-                    s3_bucket = bucket
-                    print("Found bucket: {}".format(bucket.name))
-                    break
-
         # Load the bucket object
         objBucket = s3.Object(MULTIL_BUCKET, MULTIL_DATA)
 
-        if debug_level >= 3:
-            print("[1] S3 object")
-            objGet = objBucket.get()
+        # Read the data from there as string
+        print("[1] Read body data")
+        sAllData = objBucket.get()['Body'].read().decode('utf-8')
 
-            print("[2] get Body")
-            objBody = objGet['Body']
-
-            print("[3] read and decode")
-            sData = objBody.read().decode('utf-8')
-
-            oAllData = json.loads(sData)
-            print("[4] after oAllData: {}".format(str(oAllData)))
-
-        else:
-
-            print("[1] Read body data")
-            sAllData = objBucket.get()['Body'].read().decode('utf-8')
-
-            oAllData = json.loads(sAllData)
+        # Convert the string data into a proper object
+        oAllData = json.loads(sAllData)
 
         # Possibly apply filtering
         lst_input = oAllData['Dataset']
@@ -187,12 +162,6 @@ def lambda_handler(event, context):
                 if bAnd:
                     lst_output.append(oRecord)
 
-        #if debug_level >= 3: 
-        #    print("before dumps")
-        #    data = json.dumps(oAllData['Dataset'])
-        #    print("Data: {}".format(data))
-        #else:
-        #    data = json.dumps(oAllData['Dataset'])
 
         # Build the body that is going to be returned
         body = dict(status="ok", filters=filter_count, size=len(lst_output), data=lst_output )
@@ -207,3 +176,4 @@ def lambda_handler(event, context):
         "statusCode": 200,
         "body": json.dumps(body)
         }
+
