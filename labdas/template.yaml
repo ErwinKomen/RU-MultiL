@@ -41,22 +41,22 @@ Resources:
           Properties:
             Path: /filter
             Method: get
-  MultiLappFilter:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Properties:
-      CodeUri: multil_calc/
-      Handler: script_calc.calc_handler
-      Runtime: provided
-      Layers:
-        - arn:aws:lambda:eu-central-1:599651763768:layer:basic-r:1
-      Architectures:
-        - x86_64
-      Events:
-        MultiLapp:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /calc
-            Method: get
+  #MultiLappCalc:
+  #  Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  #  Properties:
+  #    CodeUri: multil_calc/
+  #    Handler: labda_calc.lambda_handler
+  #    Runtime: python3.7
+  #    Layers:
+  #      - arn:aws:lambda:eu-central-1:599651763768:layer:basic-r:1
+  #    Architectures:
+  #      - x86_64
+  #    Events:
+  #      MultiLapp:
+  #        Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+  #        Properties:
+  #          Path: /calc
+  #          Method: get
 
 
 Outputs:
@@ -77,6 +77,6 @@ Outputs:
     Description: "MultiLapp FILTER Lambda Function ARN"
     Value: !GetAtt MultiLappFilter.Arn
 
-  MultiLappCalc:
-    Description: "MultiLapp CALC Lambda Function ARN"
-    Value: !GetAtt MultiLappCalc.Arn
+  #MultiLappCalc:
+  #  Description: "MultiLapp CALC Lambda Function ARN"
+  #  Value: !GetAtt MultiLappCalc.Arn

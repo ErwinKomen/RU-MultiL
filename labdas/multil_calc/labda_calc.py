@@ -72,6 +72,26 @@ class ErrHandle:
     def get_error_stack(self):
         return " ".join(self.loc_errStack)
 
+s3 = boto3.client('s3')
+
+################### load R
+# must load all shared libraries and set the
+# R environment variables before you can import rpy2
+# load R shared libraries from lib dir
+
+for file in os.listdir('lib'):
+    if os.path.isfile(os.path.join('lib', file)):
+        ctypes.cdll.LoadLibrary(os.path.join('lib', file))
+
+# set R environment variables
+os.environ = os.getcwd()
+os.environ = os.path.join(os.getcwd(), 'site-library')
+
+import rpy2
+from rpy2 import robjects
+from rpy2.robjects import r
+
+################## end of loading R
 
 def lambda_handler(event, context):
     """Get to the data and return a list of it"""
@@ -92,79 +112,90 @@ def lambda_handler(event, context):
     debug_level = 2
 
     try:
-        print("Setting up S3 resource")
-        s3 = boto3.resource('s3', region_name='eu-north-1', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY )
+        #print("Setting up S3 resource")
+        #s3 = boto3.resource('s3', region_name='eu-north-1', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY )
 
 
-        # Get any filter parameters
-        parameters = event['multiValueQueryStringParameters']
-        if not parameters is None:
-            for k, item in parameters.items():
-                bFound = False
-                item_first = item[0]
-                # Can we take over this filter as INT?   
-                try:             
-                    iItem = int(item_first)
-                    for key in filter_keys_int:
-                        if k == key:
-                            filter_spec_int[k] = iItem
-                            bFound = True
-                            filter_count += 1
-                            break
-                except:
-                    pass
-                if not bFound:
-                    for key in filter_keys_str:
-                        if k == key:
-                            filter_spec_str[k] = item_first
-                            bFound = True
-                            filter_count += 1
-                            break
+        ## Get any filter parameters
+        #parameters = event['multiValueQueryStringParameters']
+        #if not parameters is None:
+        #    for k, item in parameters.items():
+        #        bFound = False
+        #        item_first = item[0]
+        #        # Can we take over this filter as INT?   
+        #        try:             
+        #            iItem = int(item_first)
+        #            for key in filter_keys_int:
+        #                if k == key:
+        #                    filter_spec_int[k] = iItem
+        #                    bFound = True
+        #                    filter_count += 1
+        #                    break
+        #        except:
+        #            pass
+        #        if not bFound:
+        #            for key in filter_keys_str:
+        #                if k == key:
+        #                    filter_spec_str[k] = item_first
+        #                    bFound = True
+        #                    filter_count += 1
+        #                    break
 
-        if debug_level >=2:
-            for k,v in filter_spec_int.items():
-                print("Found integer filter {}: {}".format(k, v))
-            for k,v in filter_spec_str.items():
-                print("Found string filter {}: {}".format(k, v))
+        #if debug_level >=2:
+        #    for k,v in filter_spec_int.items():
+        #        print("Found integer filter {}: {}".format(k, v))
+        #    for k,v in filter_spec_str.items():
+        #        print("Found string filter {}: {}".format(k, v))
 
-        # Load the bucket object
-        objBucket = s3.Object(MULTIL_BUCKET, MULTIL_DATA)
+        ## Load the bucket object
+        #objBucket = s3.Object(MULTIL_BUCKET, MULTIL_DATA)
 
-        # Read the data from there as string
-        print("[1] Read body data")
-        sAllData = objBucket.get()['Body'].read().decode('utf-8')
+        ## Read the data from there as string
+        #print("[1] Read body data")
+        #sAllData = objBucket.get()['Body'].read().decode('utf-8')
 
-        # Convert the string data into a proper object
-        oAllData = json.loads(sAllData)
+        ## Convert the string data into a proper object
+        #oAllData = json.loads(sAllData)
 
-        # Possibly apply filtering
-        lst_input = oAllData['Dataset']
-        lst_output = []
-        if filter_count == 0:
-            lst_output = lst_input
-        else:
-            for oRecord in lst_input:
-                bAnd = True
-                bOr = False
+        ## Possibly apply filtering
+        #lst_input = oAllData['Dataset']
+        #lst_output = []
+        #if filter_count == 0:
+        #    lst_output = lst_input
+        #else:
+        #    for oRecord in lst_input:
+        #        bAnd = True
+        #        bOr = False
 
-                # Check if this record fits an integer match
-                for k, iValue in filter_spec_int.items():
-                    bValue = ( oRecord[k] == iValue)
-                    bAnd &= bValue
-                    bOr |= bValue
+        #        # Check if this record fits an integer match
+        #        for k, iValue in filter_spec_int.items():
+        #            bValue = ( oRecord[k] == iValue)
+        #            bAnd &= bValue
+        #            bOr |= bValue
 
-                # Check if this record fits a string match: the filter value must be contained in the record
-                for k, sValue in filter_spec_str.items():
-                    bValue = ( sValue.lower() in oRecord[k].lower())
-                    bAnd &= bValue
-                    bOr |= bValue
-                # For the moment we are taking a logical 'AND'
-                if bAnd:
-                    lst_output.append(oRecord)
+        #        # Check if this record fits a string match: the filter value must be contained in the record
+        #        for k, sValue in filter_spec_str.items():
+        #            bValue = ( sValue.lower() in oRecord[k].lower())
+        #            bAnd &= bValue
+        #            bOr |= bValue
+        #        # For the moment we are taking a logical 'AND'
+        #        if bAnd:
+        #            lst_output.append(oRecord)
 
+
+        ## Build the body that is going to be returned
+        #body = dict(status="ok", filters=filter_count, size=len(lst_output), data=lst_output )
+
+        start_value = 20
+        incr_value = 5
+        r.assign('total_value', start_value)
+        r.assign('incr_value', incr_value)
+
+        r('total_value <- total_value + incr_value')
+        r_total_value = robjects.r('total_value')
 
         # Build the body that is going to be returned
-        body = dict(status="ok", filters=filter_count, size=len(lst_output), data=lst_output )
+        body = dict(status="ok", start_value=start_value, total_value=r_total_value)
     except:
         print("ERROR...")
         msg = oErr.get_error_message()
