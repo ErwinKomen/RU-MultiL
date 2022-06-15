@@ -7,6 +7,8 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "exceldata", "exceldata\exce
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "labdas", "labdas\labdas.pyproj", "{52D5142F-D002-4814-B251-C10CCDDDE06C}"
 EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "labtest", "labtest\labtest.pyproj", "{A7717CF5-B6C0-429F-A65F-0A1EEFAA326F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -17,6 +19,8 @@ Global
 		{AA9C0F82-97AD-43AA-8FF2-E39A17A96B2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{52D5142F-D002-4814-B251-C10CCDDDE06C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{52D5142F-D002-4814-B251-C10CCDDDE06C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7717CF5-B6C0-429F-A65F-0A1EEFAA326F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7717CF5-B6C0-429F-A65F-0A1EEFAA326F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

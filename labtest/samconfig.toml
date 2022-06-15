@@ -2,11 +2,10 @@ version = 0.1
 [default]
 [default.deploy]
 [default.deploy.parameters]
-stack_name = "sam-multil"
+stack_name = "sam-test"
 s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1ghquxek1a36c"
-s3_prefix = "sam-multil"
+s3_prefix = "sam-test"
 region = "eu-central-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-disable_rollback = false
 image_repositories = []
