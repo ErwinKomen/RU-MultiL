@@ -26,8 +26,10 @@
     <Compile Include="multil_calc\labda_calc.py" />
     <Compile Include="multil_calc\__init__.py" />
     <Compile Include="multil_filter\labda_filter.py" />
+    <Compile Include="multil_filter\settings.py" />
     <Compile Include="multil_filter\__init__.py" />
     <Compile Include="multil_list\labda_list.py" />
+    <Compile Include="multil_list\settings.py" />
     <Compile Include="multil_list\__init__.py" />
     <Compile Include="settings.py" />
     <Compile Include="__init__.py" />
