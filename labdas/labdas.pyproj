@@ -31,7 +31,6 @@
     <Compile Include="multil_list\labda_list.py" />
     <Compile Include="multil_list\settings.py" />
     <Compile Include="multil_list\__init__.py" />
-    <Compile Include="settings.py" />
     <Compile Include="__init__.py" />
   </ItemGroup>
   <ItemGroup>
