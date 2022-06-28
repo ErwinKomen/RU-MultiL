@@ -371,3 +371,4 @@ FodyWeavers.xsd
 /labtest/.aws-sam
 /labtest/settings.py
 /hello/sam-hello/.aws-sam
+/labdas/multil_feature/settings.py
