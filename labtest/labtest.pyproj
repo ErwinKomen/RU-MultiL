@@ -23,7 +23,6 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="settings.py" />
     <Compile Include="test_filter\labda_filter.py" />
     <Compile Include="test_filter\__init__.py" />
     <Compile Include="test_list\labda_list.py" />
