@@ -78,7 +78,7 @@ def lambda_handler(event, context):
     body = dict(status="error", data="empty")
     feature_spec = {}
     feature_keys = [
-        'Section', 'Feature', 'DataType', 'WhoEnters'
+        'Section', 'Feature', 'DataType', 'WhoEnters', 'Description'
         ]
     feature_count = 0
 
@@ -98,12 +98,16 @@ def lambda_handler(event, context):
         # Get any filter parameters
         parameters = event['multiValueQueryStringParameters']
         if not parameters is None:
+
             for k, item in parameters.items():
+                if debug_level >=3:
+                    print("Parameter [{}]=[{}]".format(k, item))
+
                 bFound = False
                 item_first = item[0]
                 for key in feature_keys:
-                    if k == key:
-                        feature_spec[k] = item_first
+                    if k == key.lower():
+                        feature_spec[key] = item_first
                         bFound = True
                         feature_count += 1
                         break
@@ -156,6 +160,13 @@ def lambda_handler(event, context):
 
                 # Check if this record fits a string match: the filter value must be contained in the record
                 for k, sValue in feature_spec.items():
+
+                    # ======== DEBUG ==============
+                    if debug_level >=3:
+                        print('k=[{}], sValue=[{}]'.format(k, sValue))
+                        print("oRecord[k] = [{}]".format(oRecord[k]))
+                    # =============================
+
                     bValue = ( sValue.lower() in oRecord[k].lower())
                     bAnd &= bValue
                     bOr |= bValue
@@ -170,7 +181,7 @@ def lambda_handler(event, context):
         print("ERROR...")
         msg = oErr.get_error_message()
         print(msg)
-        oErr.DoError("lambda_handler")
+        oErr.DoError("feature/lambda_handler")
         body['data'] = msg
 
     return {
