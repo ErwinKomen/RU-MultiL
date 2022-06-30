@@ -13,7 +13,7 @@ Globals:
     Timeout: 30     # Usually 10, but for 'R' it must be 30 seconds or more
 
 Resources:
-  MultiLappFunction:
+  MultiLappList:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: multil_list/
@@ -55,22 +55,6 @@ Resources:
           Properties:
             Path: /feature
             Method: get
-  #MultiLappCalc:
-  #  Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-  #  Properties:
-  #    CodeUri: multil_calc/
-  #    Handler: labda_calc.lambda_handler
-  #    Runtime: python3.7
-  #    Layers:
-  #      - arn:aws:lambda:eu-central-1:599651763768:layer:basic-r:1
-  #    Architectures:
-  #      - x86_64
-  #    Events:
-  #      MultiLapp:
-  #        Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-  #        Properties:
-  #          Path: /calc
-  #          Method: get
 
 
 Outputs:
@@ -80,12 +64,12 @@ Outputs:
   MultiLappApi:
     Description: "API Gateway endpoint URL for Prod stage for MultiLapp function"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/list/"
-  MultiLappFunction:
+  MultiLappList:
     Description: "MultiLapp LIST Lambda Function ARN"
-    Value: !GetAtt MultiLappFunction.Arn
-  MultiLappFunctionIamRole:
+    Value: !GetAtt MultiLappList.Arn
+  MultiLappListIamRole:
     Description: "Implicit IAM Role created for MultiLapp function"
-    Value: !GetAtt MultiLappFunctionRole.Arn
+    Value: !GetAtt MultiLappListRole.Arn
 
   MultiLappFilter:
     Description: "MultiLapp FILTER Lambda Function ARN"
@@ -95,6 +79,3 @@ Outputs:
     Description: "MultiLapp FEATURE Lambda Function ARN"
     Value: !GetAtt MultiLappFeature.Arn
 
-  #MultiLappCalc:
-  #  Description: "MultiLapp CALC Lambda Function ARN"
-  #  Value: !GetAtt MultiLappCalc.Arn
