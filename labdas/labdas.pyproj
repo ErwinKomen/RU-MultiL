@@ -34,11 +34,20 @@
     <Compile Include="multil_list\labda_list.py" />
     <Compile Include="multil_list\settings.py" />
     <Compile Include="multil_list\__init__.py" />
+    <Compile Include="multil_rcalc\app.py" />
+    <Compile Include="multil_rcalc\aws_lambda_container_cdk_r\aws_lambda_container_cdk_r_stack.py" />
+    <Compile Include="multil_rcalc\aws_lambda_container_cdk_r\__init__.py" />
     <Compile Include="__init__.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="multil_calc\script_calc.R" />
     <Content Include="multil_list\requirements.txt" />
+    <Content Include="multil_rcalc\assets\bootstrap.R" />
+    <Content Include="multil_rcalc\assets\Dockerfile" />
+    <Content Include="multil_rcalc\assets\functions.R" />
+    <Content Include="multil_rcalc\assets\runtime.R" />
+    <Content Include="multil_rcalc\requirements-dev.txt" />
+    <Content Include="multil_rcalc\requirements.txt" />
     <Content Include="template.yaml" />
   </ItemGroup>
   <ItemGroup>
@@ -46,6 +55,9 @@
     <Folder Include="multil_filter\" />
     <Folder Include="multil_calc\" />
     <Folder Include="multil_feature\" />
+    <Folder Include="multil_rcalc\" />
+    <Folder Include="multil_rcalc\assets\" />
+    <Folder Include="multil_rcalc\aws_lambda_container_cdk_r\" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="..\..\..\..\..\env\multil\">
