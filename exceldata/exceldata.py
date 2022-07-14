@@ -16,11 +16,15 @@ from openpyxl.cell import Cell
 from openpyxl import Workbook
 
 def process_excel(oArgs):
-    """"""
+    """Read the Excel and convert into an Object"""
 
     lExtracted = []
     bBack = False
     oErr = ErrHandle()
+    oExtracted = {}
+    lFeature = []
+    lData = []
+
     try:
         # Retrieve the parameters
         flInput = oArgs.get("input")
@@ -43,11 +47,84 @@ def process_excel(oArgs):
         if ws_data is None or ws_features is None:
             return False
 
-        flOutput = "extracted.json"
+        # We have come here, so all is going well!
+        # (1) Process the worksheet with the FEATURES
+        # Fields: A=Section + Field name, B=Description, C=DataType, D=WhoEnters, E=MetaRegressionModifier, F=Comment
+        row_num = 2
+        sSection = ""
+        dict_feature = {}
+        while not ws_features.cell(row_num, 1).value is None:
+            # Get all relevant cell values
+            sFieldName = ws_features.cell(row_num, 1).value
+            sDescription = ws_features.cell(row_num, 2).value
+            sDataType = ws_features.cell(row_num, 3).value
+            sWhoEnters = ws_features.cell(row_num, 4).value
+            sMetaRegrModi = ws_features.cell(row_num, 5).value
+            sComment = ws_features.cell(row_num, 6).value
+
+            # Check if this is a section
+            if sFieldName != "" and sDataType is None:
+                # This just starts a new section
+                sSection = sFieldName
+            else:
+                oFeature = dict(
+                    Section=sSection, Feature=sFieldName,
+                    DataType=sDataType, WhoEnters=sWhoEnters,
+                    Description=sDescription
+                )
+                if not sMetaRegrModi is None and sMetaRegrModi != "":
+                    oFeature['MetaRegressionModifier'] = sMetaRegrModi
+                if not sComment is None and sComment != "":
+                    oFeature['Comment'] = sComment
+
+                # Initialize a list of values for this feature
+                oFeature['values'] = []
+
+                lFeature.append(oFeature)
+                dict_feature[sFieldName] = oFeature
+
+            # Go to the next row
+            row_num += 1
+
+        # Add the list of features to the object
+        oExtracted['Features'] = lFeature
+
+        # (2) Process the worksheet with the DATA
+        row_num = 1
+        # Process the first row with field names
+        lHeader = []
+        col_num = 1
+        while not ws_data.cell(row_num, col_num).value is None:
+            lHeader.append(ws_data.cell(row_num, col_num).value)
+            col_num += 1
+
+        row_num = 2
+        while not ws_data.cell(row_num, 1).value is None:
+            oErr.Status("Reading data row {}".format(row_num))
+            # Process the values in this row
+            oData = {}
+            for idx, sFieldName in enumerate(lHeader):
+                col_num = idx + 1
+                # Get the value
+                value = ws_data.cell(row_num, col_num).value
+                # Add k/v to oData
+                oData[sFieldName] = value
+                # Possibly add value to feature value dictionary
+                if not value in dict_feature[sFieldName]['values']:
+                    dict_feature[sFieldName]['values'].append(value)
+
+            # Add the data in the list
+            lData.append(oData)
+
+            # Go to the next row
+            row_num += 1
+
+        # Add the list of data to the Object
+        oExtracted['Dataset'] = lData
 
         # Save output
-        with open(flOutput, "w", encoding="utf-8-sig") as fp:
-            json.dump(lExtracted, fp, indent=2)
+        with open(flOutput, "w", encoding="utf-8") as fp:
+            json.dump(oExtracted, fp, indent=2)
     except:
         msg = oErr.get_error_message()
         oErr.DoError("process_excel")
@@ -58,7 +135,6 @@ def main(prgName, argv) :
     flInput = ''        # input file name: XML with author definitions
     flOutput = ''       # output file name
     lExtracted = []
-    keywords = ['sermon', 'sermons', 'homélie', 'homélies', 'homéliaire', 'homiliaire', 'liturgie', 'liturgique', 'sermonnaire', 'lectionnaire', 'bréviaire']
 
     oErr = ErrHandle()
     try:
@@ -91,7 +167,7 @@ def main(prgName, argv) :
 
         # Process the Excel
         if not process_excel(oArgs):
-            oErr.DoError("Could not complete reading CorpusSearch results", True)
+            oErr.DoError("Could not complete reading MultiLingual results", True)
 
 
         # All went fine  
