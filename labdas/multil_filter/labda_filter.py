@@ -77,12 +77,19 @@ def lambda_handler(event, context):
     oErr = ErrHandle()
     body = dict(status="error", data="empty")
     filter_spec_int = {}
+    filter_spec_flo = {}
     filter_spec_str = {}
     filter_keys_int = [
-        'observation', 'experiment_number', 'task_number', 'mean_age_2L1', 'mean-age_L1', 'n_2L1', 'n_L1'
+        'observation', 'experiment_number', 'task_number'
+        ]
+    filter_keys_flo = [
+        'mean_age_2L1', 'mean-age_L1', 'n_2L1', 'n_L1'
         ]
     filter_keys_str = [
         'peer_reviewed', 'target_language', 'other_language', 'task_type', 'task_detailed',
+        # issue #2: adding new filter names
+        'task_detail', 'linguistic_property', 'surface_overlap_author', 'target_or_child_system',
+        'dominance', 'language_home', 'societal_language', 
         ]
     filter_count = 0
 
@@ -116,6 +123,22 @@ def lambda_handler(event, context):
                             break
                 except:
                     pass
+
+                # If this fails, check if this can be a FLOAT filter
+                if not bFound:
+                    # Can we take over this filter as FLOAT?   
+                    try:             
+                        fItem = float(item_first)
+                        for key in filter_keys_flo:
+                            if k == key:
+                                filter_spec_flo[k] = fItem
+                                bFound = True
+                                filter_count += 1
+                                break
+                    except:
+                        pass
+
+                # If all else fails, this must be a STRING filter
                 if not bFound:
                     for key in filter_keys_str:
                         if k == key:
@@ -175,6 +198,12 @@ def lambda_handler(event, context):
                 # Check if this record fits an integer match
                 for k, iValue in filter_spec_int.items():
                     bValue = ( oRecord[k] == iValue)
+                    bAnd &= bValue
+                    bOr |= bValue
+
+                # Check if this record fits a FLOAT match
+                for k, fValue in filter_spec_flo.items():
+                    bValue = ( oRecord[k] == fValue)
                     bAnd &= bValue
                     bOr |= bValue
 
