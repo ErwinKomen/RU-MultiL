@@ -49,6 +49,13 @@ initializeRuntime <- function() {
     library(httr)
     library(jsonlite)
 
+    # benodigde libraries:
+    library(readxl)       # voor het inlezen van de data
+    library(metafor)      # voor het runnen van de modellen
+    library(tidyverse)    # voor het manipuleren van de data
+    library(purrr)
+
+
     initializeLogging()
     HANDLER <- Sys.getenv("_HANDLER")
     HANDLER_split <- strsplit(HANDLER, ".", fixed = TRUE)[[1]]

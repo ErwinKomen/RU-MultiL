@@ -25,5 +25,8 @@ RUN printf '#!/bin/sh\ncd $LAMBDA_TASK_ROOT\nRscript bootstrap.R' > /var/runtime
   && chmod +x /var/runtime/bootstrap
 
 
-CMD [ "functions.myRcode" ]
+# ========== INITIAL SETTINGS ========
+# CMD [ "functions.myRcode" ]
+# ========== ACTUAL CALCULATIONS =====
+CMD [ "functions.forestPrepare"]
 

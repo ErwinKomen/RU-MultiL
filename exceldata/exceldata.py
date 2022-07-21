@@ -34,7 +34,7 @@ def process_excel(oArgs):
             return False
 
         # Load the Excel workbook
-        wb = openpyxl.load_workbook(flInput, read_only=True)
+        wb = openpyxl.load_workbook(flInput, read_only=True, data_only=True)
         sheetnames = wb.sheetnames
         ws_data = None
         ws_features = None
@@ -67,6 +67,12 @@ def process_excel(oArgs):
                 # This just starts a new section
                 sSection = sFieldName
             else:
+                # Check whether this is a list of options
+                arOptions = []
+                if "options: " in sDataType:
+                    # Retrieve the list of options
+                    sOptionList = sDataType[len("options:"):].strip()
+                    arOptions = [x.strip() for x in sOptionList.split(",")]
                 oFeature = dict(
                     Section=sSection, Feature=sFieldName,
                     DataType=sDataType, WhoEnters=sWhoEnters,
@@ -78,7 +84,7 @@ def process_excel(oArgs):
                     oFeature['Comment'] = sComment
 
                 # Initialize a list of values for this feature
-                oFeature['values'] = []
+                oFeature['values'] = arOptions
 
                 lFeature.append(oFeature)
                 dict_feature[sFieldName] = oFeature
@@ -118,6 +124,16 @@ def process_excel(oArgs):
 
             # Go to the next row
             row_num += 1
+
+        # Walk the features once more, sorting the lists of values
+        oErr.Status("sorting values")
+        for k, oItem in dict_feature.items():
+            try:
+                oItem['values'] = sorted(oItem['values'])
+            except:
+                msg = oErr.get_error_message()
+                oErr.Status("Key [{}]: {}".format(k, msg))
+                a = 2
 
         # Add the list of data to the Object
         oExtracted['Dataset'] = lData
