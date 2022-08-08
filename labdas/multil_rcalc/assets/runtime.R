@@ -1,4 +1,4 @@
-library(logger)
+# library(logger)
 library(logging)
 
 to_str <- function(x) {
@@ -53,10 +53,12 @@ initializeRuntime <- function() {
     library(jsonlite)
 
     # benodigde libraries:
-    library(readxl)       # voor het inlezen van de data
-    library(metafor)      # voor het runnen van de modellen
-    library(tidyverse)    # voor het manipuleren van de data
-    library(purrr)
+    if (FALSE) {
+        library(readxl)       # voor het inlezen van de data
+        library(metafor)      # voor het runnen van de modellen
+        library(tidyverse)    # voor het manipuleren van de data
+        library(purrr)
+    }
 
 
     initializeLogging()
