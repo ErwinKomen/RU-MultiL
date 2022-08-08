@@ -1,13 +1,8 @@
+
 myRcode <- function(number, bericht) {
   list(newvalue = number * 2, bericht = bericht, status = "alles goed")
 }
 
-# benodigde libraries: those are initialized in [initializeRuntime]
-#library(readxl)       # voor het inlezen van de data
-#library(metafor)      # voor het runnen van de modellen
-#library(tidyverse)    # voor het manipuleren van de data
-#library(purrr)
-#library(jsonlite)
 
 # FUnction that assumes we are receiving the whole JSON data 
 forestPrepare <- function(dataset) {
@@ -75,4 +70,20 @@ forestPrepare <- function(dataset) {
   
   # Return what we found
   return ( oBack )
+}
+
+multilingEntry <- function(dataset, calling="") {
+    logdebug("Start multilingEntry '%s'", calling, logger = 'runtime')
+
+    # This is the main entry point
+    if (calling == "" | calling == "forestprepare") {
+        # Call forest prepare
+        oBack <- forestPrepare(dataset)
+
+        return( oBack )
+    } else if (calling == "debug" | calling == "test") {
+        list(bericht = calling, status = "alles goed")
+    } else {
+        list(bericht = calling, status = "Dit commando is onbekend")
+    }
 }

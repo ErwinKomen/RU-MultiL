@@ -14,7 +14,16 @@ ENV PATH="${PATH}:/opt/R/${R_VERSION}/bin/"
 # System requirements for R packages
 RUN yum -y install openssl-devel
 
-RUN Rscript -e "install.packages(c('httr', 'jsonlite', 'logger', 'logging'), repos = 'https://cloud.r-project.org/')"
+# Required for tidyverse (note: syntax like CentOS)
+RUN yum -y install libxml2-devel
+
+#library(readxl)       # voor het inlezen van de data
+#library(metafor)      # voor het runnen van de modellen
+#library(tidyverse)    # voor het manipuleren van de data
+#library(purrr)
+RUN Rscript -e "install.packages(c('httr', 'jsonlite', 'logger', 'logging', 'readxl', 'metafor', 'purrr'), repos = 'https://cloud.r-project.org/')"
+RUN Rscript -e "install.packages('tidyverse', repos = 'https://cloud.r-project.org/')"
+# RUN Rscript -e "install.packages(c('Matrix', 'metadat'), repos = 'https://cloud.r-project.org/')"
 
 
 COPY runtime.R functions.R bootstrap.R ${LAMBDA_TASK_ROOT}/
@@ -26,7 +35,8 @@ RUN printf '#!/bin/sh\ncd $LAMBDA_TASK_ROOT\nRscript bootstrap.R' > /var/runtime
 
 
 # ========== INITIAL SETTINGS ========
-# CMD [ "functions.myRcode" ]
+CMD [ "functions.myRcode" ]
+
 # ========== ACTUAL CALCULATIONS =====
-CMD [ "functions.forestPrepare"]
+# CMD [ "functions.multilingEntry"]
 
