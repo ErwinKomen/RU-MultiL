@@ -53,7 +53,7 @@ initializeRuntime <- function() {
     library(jsonlite)
 
     # benodigde libraries:
-    if (FALSE) {
+    if (TRUE) {
         library(readxl)       # voor het inlezen van de data
         library(metafor)      # voor het runnen van de modellen
         library(tidyverse)    # voor het manipuleren van de data
