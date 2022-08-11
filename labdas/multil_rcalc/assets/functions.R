@@ -5,7 +5,7 @@ myRcode <- function(number, bericht) {
 
 
 # FUnction that assumes we are receiving the whole JSON data 
-forestPrepare <- function(dataset) {
+forestPrepare <- function(dataset, useDataFilter=FALSE) {
   # Make sure the $Dataset part is read as a TIBBLE
   dat <- dataset %>% as.tibble
    
@@ -54,8 +54,11 @@ forestPrepare <- function(dataset) {
     }
   }
   
-  # only include test cases of CLI
-  dat1 <- dat1 %>% filter(CLI_predicted == "yes", target_language=="english")
+  # Use data filter or not?
+  if (useDataFilter) {
+      # only include test cases of CLI
+      dat1 <- dat1 %>% filter(CLI_predicted == "yes", target_language=="english")
+  }
   
   # zonder predictor(s)
   model1 <- rma.mv(g_correct_sign, g_var, data = dat1, random = list(~ 1|data_collection/task_number, ~1|bilingual_group, ~1|linguistic_property))
@@ -72,6 +75,14 @@ forestPrepare <- function(dataset) {
   return ( oBack )
 }
 
+# ----------------------------------------------------------------------------
+# The main entry point for all purposes
+#
+# Action depends on 'calling':
+# - if empty: just call forestPrepare()
+# - if 'debug' or 'test': return message 'alles goed'
+# - otherwise: signal that the command is not known
+# ----------------------------------------------------------------------------
 multilingEntry <- function(dataset, calling="") {
     logdebug("Start multilingEntry '%s'", calling, logger = 'runtime')
 

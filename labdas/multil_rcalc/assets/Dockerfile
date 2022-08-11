@@ -18,7 +18,9 @@ RUN yum -y install openssl-devel
 RUN yum -y install libxml2-devel
 
 RUN Rscript -e "install.packages(c('httr', 'jsonlite', 'logger', 'logging'), repos = 'https://cloud.r-project.org/')"
-RUN Rscript -e "install.packages(c('readxl', 'metafor', 'purrr', 'tidyverse'), repos = 'https://cloud.r-project.org/')"
+RUN Rscript -e "install.packages(c('readxl', 'metafor', 'purrr'), repos = 'https://cloud.r-project.org/')"
+# For some reason this needs to be separate and the last one: tidyverse
+RUN Rscript -e "install.packages(c('tidyverse'), repos = 'https://cloud.r-project.org/')"
 
 
 COPY runtime.R functions.R bootstrap.R ${LAMBDA_TASK_ROOT}/
