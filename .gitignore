@@ -372,3 +372,4 @@ FodyWeavers.xsd
 /labtest/settings.py
 /hello/sam-hello/.aws-sam
 /labdas/multil_feature/settings.py
+/test_results_filtered.json

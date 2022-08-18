@@ -63,10 +63,13 @@ forestPrepare <- function(dataset, useDataFilter=FALSE) {
   # zonder predictor(s)
   model1 <- rma.mv(g_correct_sign, g_var, data = dat1, random = list(~ 1|data_collection/task_number, ~1|bilingual_group, ~1|linguistic_property))
   
-  # Extract the effect-size ($yi) and the sampling variance ($vi) as well as the include/skip list ($not.na) and the row name (dat1$short_cite)
+  # Extract the effect-size ($yi) and the sampling variance ($vi) as well as the weight (determining the square-point size)
+  # Note about Confidence Interval:
+  #    CI = [effectSize - 1.96 * SQRT(sampVar), effectSize + 1.96 * SQRT(sampVar)]
   oData <- data.frame(
     effectSize = model1$yi,
-    sampling = model1$vi
+    sampVar = model1$vi,
+    weight = weights.rma.mv(model1)
   )  
   oBack <- jsonlite::toJSON(oData)
   #  oBack <- jsonlite::toJSON(model1)
@@ -90,6 +93,11 @@ multilingEntry <- function(dataset, calling="") {
     if (calling == "" | calling == "forestprepare") {
         # Call forest prepare
         oBack <- forestPrepare(dataset)
+
+        return( oBack )
+    } else if (calling == "usedatafilter") {
+        # Call forest prepare
+        oBack <- forestPrepare(dataset, TRUE)
 
         return( oBack )
     } else if (calling == "debug" | calling == "test") {
