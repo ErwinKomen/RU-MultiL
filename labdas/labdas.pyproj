@@ -23,6 +23,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="multil_add\labda_add.py" />
+    <Compile Include="multil_add\settings.py" />
+    <Compile Include="multil_add\__init__.py" />
     <Compile Include="multil_calc\labda_calc.py" />
     <Compile Include="multil_calc\__init__.py" />
     <Compile Include="multil_feature\labda_feature.py" />
@@ -58,6 +61,7 @@
     <Folder Include="multil_rcalc\" />
     <Folder Include="multil_rcalc\assets\" />
     <Folder Include="multil_rcalc\aws_lambda_container_cdk_r\" />
+    <Folder Include="multil_add\" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="..\..\..\..\..\env\multil\">
