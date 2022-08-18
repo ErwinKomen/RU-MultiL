@@ -55,6 +55,20 @@ Resources:
           Properties:
             Path: /feature
             Method: get
+  MultiLappAdd:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: multil_add/
+      Handler: labda_add.lambda_handler
+      Runtime: python3.7
+      Architectures:
+        - x86_64
+      Events:
+        MultiLapp:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /add
+            Method: post
 
 
 Outputs:
@@ -78,4 +92,8 @@ Outputs:
   MultiLappFeature:
     Description: "MultiLapp FEATURE Lambda Function ARN"
     Value: !GetAtt MultiLappFeature.Arn
+
+  MultiLappAdd:
+    Description: "MultiLapp ADD Lambda Function ARN"
+    Value: !GetAtt MultiLappAdd.Arn
 

@@ -76,7 +76,6 @@ def lambda_handler(event, context):
     oErr = ErrHandle()
     body = dict(status="error", data="empty")
 
-    bFindBucket = False
     debug_level = 2
 
     try:
@@ -88,22 +87,21 @@ def lambda_handler(event, context):
 
         # Initialisations
         data = "none"
+        lst_result = []
 
-        # Find the right bucket
-        if bFindBucket:
-            s3_bucket = None
-            for bucket in s3.buckets.all():
-                if bucket.name == MULTIL_BUCKET:
-                    s3_bucket = bucket
-                    print("Found bucket: {}".format(bucket.name))
-                    break
+        # Get the new data, which should be inside 'data'
+        if 'data' in event:
+            data = event['data']
+            if not data is None and len(data) > 0:
+                # Okay there is some data: process it
+                print("there is data! Length is: {}".format(len(data)))
 
         # Load the bucket object
         objBucket = s3.Object(MULTIL_BUCKET, MULTIL_DATA)
 
 
         # Build the body that is going to be returned
-        body = dict(status="ok", data=oAllData )
+        body = dict(status="ok", data=lst_result )
     except:
         print("ERROR...")
         msg = oErr.get_error_message()
