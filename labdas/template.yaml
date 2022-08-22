@@ -69,30 +69,6 @@ Resources:
           Properties:
             Path: /add
             Method: post
-  MultiLappRcalc:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
-    Properties:
-      PackageType: Image
-      #CodeUri: multil_add/
-      #Handler: labda_add.lambda_handler
-      #Runtime: python3.7
-      ImageUri: 
-          Fn::Join:
-            - ""
-            - - Ref: AWS::AccountId
-              - .dkr.ecr.
-              - Ref: AWS::Region
-              - "."
-              - Ref: AWS::URLSuffix
-              - /aws-cdk/assets:8ff2a7d11caccf6f5f56e1fe2930553bd356dc01dce0fa92fee4f956697d722c
-      Architectures:
-        - x86_64
-      Events:
-        MultiLapp:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
-          Properties:
-            Path: /rcalc
-            Method: post
 
 
 Outputs:
@@ -121,7 +97,5 @@ Outputs:
     Description: "MultiLapp ADD Lambda Function ARN"
     Value: !GetAtt MultiLappAdd.Arn
 
-  MultiLappRcalc:
-    Description: "MultiLapp RCALC Lambda Function ARN"
-    Value: !GetAtt MultiLappRcalc.Arn
+
 
