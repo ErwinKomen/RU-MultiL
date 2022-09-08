@@ -87,7 +87,7 @@ def lambda_handler(event, context):
 
         # Initialisations
         data = "none"
-        lst_result = []
+        lst_result = ["aapje"]
 
         # Get the new data, which should be inside 'data'
         if 'data' in event:
@@ -95,6 +95,17 @@ def lambda_handler(event, context):
             if not data is None and len(data) > 0:
                 # Okay there is some data: process it
                 print("there is data! Length is: {}".format(len(data)))
+                # Walk the data using k/v
+                for k,v in data.items():
+                    kv = "data parameter '{}' = '{}'".format(k,v)
+                    print(kv)
+                    lst_result.append(dict(item=kv))
+            else:
+                print("there is no data...")
+                lst_result.append(dict(item="data is empty"))
+        else:
+            lst_result.append(dict(item="no data in event"))
+            lst_result.append(dict(test=event['multiValueQueryStringParameters']))
 
         # Load the bucket object
         objBucket = s3.Object(MULTIL_BUCKET, MULTIL_DATA)
