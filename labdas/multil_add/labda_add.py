@@ -14,6 +14,19 @@ from settings import ACCESS_KEY, SECRET_KEY
 MULTIL_BUCKET = "multiling-data"
 MULTIL_DATA = "multilingual_data.json"
 
+# The keys that should at least be in the dataset rows
+data_keys = [
+    "observation", "short_cite", "published", "data_collection", "task_number",
+    "target_language", "other_language", "task_type", "task_detailed", "linguistic_property",
+    "linguistic_property_detailed","bilingual_group", "monolingual_group",
+    "surface_overlap_author", "target_or_child_system", "dominance", "language_home",
+    "societal_language", "CLI_predicted", "predicted_direction_difference_2L1",
+    "mean_age_2L1", "sd_age_2L1", "age_min_2L1", "age_max_2L1", "mean_age_L1",
+    "sd_age_L1", "age_min_L1", "age_max_L1", "n_2L1", "n_L1", "mean_2L1",
+    "mean_L1", "SD_2L1", "SD_L1", "mean_difference", "t", "t_correct_sign",
+    "d", "g", "g_correct_sign", "g_var", "g_SE", "g_W", "num_trials"
+    ]
+
 class ErrHandle:
     """Error handling"""
 
@@ -69,6 +82,83 @@ class ErrHandle:
     def get_error_stack(self):
         return " ".join(self.loc_errStack)
 
+def is_good_datarow(oRow):
+    """Check whether this is a row of data that is correct"""
+
+    oErr = ErrHandle()
+    bBack = False
+    msg = ""
+    try:
+        # Double check that this is in fact a dictionary
+        if isinstance(oRow, dict):
+            # Good, we have a dictionary: check whether all keys are there
+            oKeys = {}
+            for k,v in oRow.items():
+                if k in oKeys:
+                    oKeys[k] += 1
+                else:
+                    oKeys[k] = 0
+            bBack = (len(data_keys) == len(oKeys))
+            if not bBack:
+                # Create a message
+                msg = "Datarow should contain {} keys, but only {} were found.".format(len(data_keys), len(oKeys))
+    except:
+        msg = oErr.get_error_message()
+        print(msg)
+        oErr.DoError("is_good_datarow")
+        bBack = False
+    return bBack, msg
+
+def dataset_contains(lst_dataset, oRow):
+    """Check whether the list of data in lst_dataset contains oRow already"""
+
+    oErr = ErrHandle()
+    bBack = False
+    debug_level = 2
+    msg = ""
+    try:
+        html = []
+        if debug_level > 2:
+                html.append("dataset size = {}".format(len(lst_dataset)))
+        # Walk the whole data set
+        for datasetRow in lst_dataset:
+            # Get the observation ID
+            observation_id = datasetRow['observation']
+
+            if debug_level > 2:
+                html.append( "checking observation {}".format(observation_id))
+            # Check if the current row is inside the dataset
+            iCount = 0
+            for k in data_keys:
+                if oRow[k] != datasetRow[k]:
+                    iCount += 1
+            # If the count is zero, this row is already in the dataset
+            if iCount == 0:
+                bBack = True
+                print("dataset_contains: count is zero")
+                html.append( "The row exists as observation {}".format(observation_id))
+                break
+            elif observation_id == oRow['observation']:
+                if debug_level > 2:
+                    html.append("Observation {}, count={}".format(observation_id, iCount))
+                # The observation is the same: where is the first difference?
+                for k in data_keys:
+                    if debug_level > 2:
+                        html.append("Checking key: {}".format(k))
+                    if oRow[k] != datasetRow[k]:
+                        html.append( "Same observation {} differs at key {}: '{}' versus '{}'".format(
+                            observation_id, k, oRow[k], datasetRow[k]
+                            ) )
+                        break
+                break
+        msg = "\n".join(html)
+
+    except:
+        msg = oErr.get_error_message()
+        print(msg)
+        oErr.DoError("dataset_contains")
+        bBack = False
+    return bBack, msg
 
 def lambda_handler(event, context):
     """Get to the data and return a list of it"""
@@ -86,29 +176,92 @@ def lambda_handler(event, context):
         client = boto3.client('s3',  region_name='eu-north-1', aws_access_key_id=ACCESS_KEY, aws_secret_access_key=SECRET_KEY)
 
         # Initialisations
-        data = "none"
-        lst_result = ["aapje"]
+        data = []           # List into which the items to be added are put
+        lst_result = []     # The result we provide for the user
 
-        # Get the new data, which should be inside 'data'
-        if 'data' in event:
-            data = event['data']
-            if not data is None and len(data) > 0:
-                # Okay there is some data: process it
-                print("there is data! Length is: {}".format(len(data)))
-                # Walk the data using k/v
-                for k,v in data.items():
-                    kv = "data parameter '{}' = '{}'".format(k,v)
-                    print(kv)
-                    lst_result.append(dict(item=kv))
-            else:
-                print("there is no data...")
-                lst_result.append(dict(item="data is empty"))
+        # Get the new data, which should be inside 'event.body' as a string
+        if 'body' in event:
+            body = json.loads(event['body'])
+            if 'data' in body:
+                data = body['data']
+
+                if not data is None and len(data) > 0:
+                    lst_result.append(
+                        dict(
+                            msg="reading data size={} body size={}".format(
+                                len(data), 
+                                len(event['body'])
+                                )
+                            )
+                        )
+
+                if debug_level > 2:
+                    if not data is None and len(data) > 0:
+                        # Okay there is some data: process it
+                        print("there is body-data! Length is: {}".format(len(data)))
+                        # Walk the data using k/v
+                        for k,v in data.items():
+                            kv = "body-data parameter '{}' = '{}'".format(k,v)
+                            print(kv)
+                            lst_result.append(dict(item=kv))
+                    else:
+                        print("there is no data...")
+                        lst_result.append(dict(item="body-data is empty"))
         else:
             lst_result.append(dict(item="no data in event"))
             lst_result.append(dict(test=event['multiValueQueryStringParameters']))
 
-        # Load the bucket object
-        objBucket = s3.Object(MULTIL_BUCKET, MULTIL_DATA)
+        # Do we actually have 1 or more data items to be added?
+        if len(data) > 0:
+            # Load the bucket object
+            objBucket = s3.Object(MULTIL_BUCKET, MULTIL_DATA)
+
+            print("[1] Read body data")
+            sAllData = objBucket.get()['Body'].read().decode('utf-8')
+            
+            oAllData = json.loads(sAllData)
+
+            # Double check if we have a dataset in there
+            if 'Dataset' in oAllData:
+                # Read the dataset into a list
+                lst_input = oAllData['Dataset']
+
+                # Check whether we need to save this or not
+                bNeedSaving = False
+
+                # Walk the data to be added
+                for idx, oNewData in enumerate(data):
+                    # Double check that this is in fact a dictionary
+                    bBack, msg = is_good_datarow(oNewData)
+                    if not bBack:
+                        # Provide a message
+                        lst_result.append(dict(row=idx, msg=msg))
+                    else:
+                        # The data is good, check if it is already there or not
+                        bBack, sErr = dataset_contains(lst_input, oNewData)
+                        if bBack:
+                            # Provide a message
+                            msg = "Skipping this row, since the data is already in S3"
+                            lst_result.append(dict(row=idx, msg=msg))
+                        elif sErr != "":
+                            msg = "Error"
+                            lst_result.append(dict(row=idx, msg=msg, err=sErr))
+                        else:
+                            # Add this row to the data
+                            msg = "Adding this row"
+                            lst_result.append(dict(row=idx, msg=msg))
+                            lst_input.append(oNewData)
+                            # Indicate that saving is needed
+                            bNeedSaving = True
+
+                # Should we save the results to S3?
+                if bNeedSaving:
+                    sData = json.dumps(oAllData, indent=2)
+                    objBucket.put(Body=sData)
+
+        else:
+            # There is no data, so just state that
+            lst_result.append(dict(msg="The /add function works fine, but the list of data objects is empty"))
 
 
         # Build the body that is going to be returned
@@ -129,3 +282,5 @@ def lambda_handler(event, context):
         },
         "body": json.dumps(body)
         }
+
+
