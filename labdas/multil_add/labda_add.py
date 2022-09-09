@@ -9,7 +9,7 @@ import os, sys
 import boto3
 from datetime import date, datetime
 
-from settings import ACCESS_KEY, SECRET_KEY
+from settings import ACCESS_KEY, SECRET_KEY, EDIT_KEY
 
 MULTIL_BUCKET = "multiling-data"
 MULTIL_DATA = "multilingual_data.json"
@@ -82,6 +82,21 @@ class ErrHandle:
     def get_error_stack(self):
         return " ".join(self.loc_errStack)
 
+def check_rights(oData, key):
+    """Check whether 'key' coincides with the needed editing rights key"""
+
+    bBack = False
+    oErr = ErrHandle()
+    try:
+        edit_key = oData.get("edit_key", "")
+        msg = "Found key: [{}]".format(edit_key)
+        bBack = (edit_key == key)
+    except:
+        msg = oErr.get_error_message()
+        oErr.DoError("check_rights")
+        bBack = False
+    return bBack, msg
+
 def is_good_datarow(oRow):
     """Check whether this is a row of data that is correct"""
 
@@ -116,12 +131,13 @@ def dataset_contains(lst_dataset, oRow):
     bBack = False
     debug_level = 2
     msg = ""
+    row_id = -1
     try:
         html = []
         if debug_level > 2:
                 html.append("dataset size = {}".format(len(lst_dataset)))
         # Walk the whole data set
-        for datasetRow in lst_dataset:
+        for idx, datasetRow in enumerate(lst_dataset):
             # Get the observation ID
             observation_id = datasetRow['observation']
 
@@ -134,11 +150,21 @@ def dataset_contains(lst_dataset, oRow):
                     iCount += 1
             # If the count is zero, this row is already in the dataset
             if iCount == 0:
+                # Make sure that we return the right info: True 
                 bBack = True
-                print("dataset_contains: count is zero")
-                html.append( "The row exists as observation {}".format(observation_id))
+
+                # --------- DEBUGGING -------------------------
+                if debug_level > 1:
+                    print("dataset_contains: count is zero")
+                    html.append( "The row exists as observation {}".format(observation_id))
+                # ---------------------------------------------
+
                 break
             elif observation_id == oRow['observation']:
+                # Make sure that we return the right info: True + row index
+                row_id = idx
+                bBack = True
+
                 if debug_level > 2:
                     html.append("Observation {}, count={}".format(observation_id, iCount))
                 # The observation is the same: where is the first difference?
@@ -158,7 +184,7 @@ def dataset_contains(lst_dataset, oRow):
         print(msg)
         oErr.DoError("dataset_contains")
         bBack = False
-    return bBack, msg
+    return bBack, msg, row_id
 
 def lambda_handler(event, context):
     """Get to the data and return a list of it"""
@@ -207,12 +233,16 @@ def lambda_handler(event, context):
                     else:
                         print("there is no data...")
                         lst_result.append(dict(item="body-data is empty"))
+
+            # Since this involves editing, see whether this caller has editing rights
+            bHasEditingRights, msg = check_rights(body, EDIT_KEY)
+
         else:
             lst_result.append(dict(item="no data in event"))
             lst_result.append(dict(test=event['multiValueQueryStringParameters']))
 
         # Do we actually have 1 or more data items to be added?
-        if len(data) > 0:
+        if bHasEditingRights and len(data) > 0:
             # Load the bucket object
             objBucket = s3.Object(MULTIL_BUCKET, MULTIL_DATA)
 
@@ -222,7 +252,7 @@ def lambda_handler(event, context):
             oAllData = json.loads(sAllData)
 
             # Double check if we have a dataset in there
-            if 'Dataset' in oAllData:
+            if bHasEditingRights and 'Dataset' in oAllData:
                 # Read the dataset into a list
                 lst_input = oAllData['Dataset']
 
@@ -237,19 +267,30 @@ def lambda_handler(event, context):
                         # Provide a message
                         lst_result.append(dict(row=idx, msg=msg))
                     else:
+                        # The data is good, try to get at least the observation id
+                        observation_id = oNewData.get("observation", -1)
+
                         # The data is good, check if it is already there or not
-                        bBack, sErr = dataset_contains(lst_input, oNewData)
+                        bBack, sErr, row_id = dataset_contains(lst_input, oNewData)
                         if bBack:
-                            # Provide a message
-                            msg = "Skipping this row, since the data is already in S3"
-                            lst_result.append(dict(row=idx, msg=msg))
+                            if row_id >= 0:
+                                # The data is already there: overwrite it
+                                lst_input[row_id] = oNewData
+                                bNeedSaving = True
+                                # Provide a message
+                                msg = "Updating this row, since the data is already in S3"
+                                lst_result.append(dict(observation=observation_id, msg=msg, check=sErr))
+                            else:
+                                # Provide a message
+                                msg = "Skipping this row, since the same data is already in S3"
+                                lst_result.append(dict(observation=observation_id, msg=msg))
                         elif sErr != "":
                             msg = "Error"
-                            lst_result.append(dict(row=idx, msg=msg, err=sErr))
+                            lst_result.append(dict(observation=observation_id, msg=msg, err=sErr))
                         else:
                             # Add this row to the data
                             msg = "Adding this row"
-                            lst_result.append(dict(row=idx, msg=msg))
+                            lst_result.append(dict(observation=observation_id, msg=msg))
                             lst_input.append(oNewData)
                             # Indicate that saving is needed
                             bNeedSaving = True
@@ -260,8 +301,12 @@ def lambda_handler(event, context):
                     objBucket.put(Body=sData)
 
         else:
-            # There is no data, so just state that
-            lst_result.append(dict(msg="The /add function works fine, but the list of data objects is empty"))
+            if not bHasEditingRights:
+                # User has no editing rights
+                lst_result.append(dict(msg="No editing rights", check=msg))
+            else:
+                # There is no data, so just state that
+                lst_result.append(dict(msg="The /add function works fine, but the list of data objects is empty"))
 
 
         # Build the body that is going to be returned
