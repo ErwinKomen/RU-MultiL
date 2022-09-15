@@ -28,6 +28,9 @@
     <Compile Include="multil_add\__init__.py" />
     <Compile Include="multil_calc\labda_calc.py" />
     <Compile Include="multil_calc\__init__.py" />
+    <Compile Include="multil_delete\labda_delete.py" />
+    <Compile Include="multil_delete\settings.py" />
+    <Compile Include="multil_delete\__init__.py" />
     <Compile Include="multil_feature\labda_feature.py" />
     <Compile Include="multil_feature\settings.py" />
     <Compile Include="multil_feature\__init__.py" />
@@ -62,6 +65,7 @@
     <Folder Include="multil_rcalc\assets\" />
     <Folder Include="multil_rcalc\aws_lambda_container_cdk_r\" />
     <Folder Include="multil_add\" />
+    <Folder Include="multil_delete\" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="..\..\..\..\..\env\multil\">

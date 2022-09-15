@@ -1,6 +1,6 @@
-""" multil_list
+""" multil_add
 
-This implements the /list functionality for the Multi-Lingual Meta analysis web application
+This implements the /add functionality for the Multi-Lingual Meta analysis web application
 
 """
 

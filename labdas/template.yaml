@@ -69,6 +69,20 @@ Resources:
           Properties:
             Path: /add
             Method: post
+  MultiLappDelete:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: multil_delete/
+      Handler: labda_delete.lambda_handler
+      Runtime: python3.7
+      Architectures:
+        - x86_64
+      Events:
+        MultiLapp:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /delete
+            Method: post
 
 
 Outputs:
@@ -96,6 +110,10 @@ Outputs:
   MultiLappAdd:
     Description: "MultiLapp ADD Lambda Function ARN"
     Value: !GetAtt MultiLappAdd.Arn
+
+  MultiLappAdd:
+    Description: "MultiLapp DELETE Lambda Function ARN"
+    Value: !GetAtt MultiLappDelete.Arn
 
 
 

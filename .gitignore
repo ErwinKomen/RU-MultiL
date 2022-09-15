@@ -374,3 +374,4 @@ FodyWeavers.xsd
 /labdas/multil_feature/settings.py
 /test_results_filtered.json
 /labdas/multil_add/settings.py
+/labdas/multil_delete/settings.py
