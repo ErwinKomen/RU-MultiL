@@ -18,7 +18,8 @@ forestPrepare <- function(dataset, useDataFilter=FALSE) {
   dat1 <- dat %>%
     group_by(short_cite, task_number, linguistic_property, linguistic_property_detailed, monolingual_group,
              # onderstaande rij variabelen zouden als het goed is altijd hetzelfde moeten zijn als we op bovenstaande variabelen gegroepeerd hebben -- heb ze hier alleen toegevoegd om te zorgen dat ze in de nieuwe dataset belanden
-             data_collection, target_language, other_language, task_type, task_detailed, surface_overlap_author, target_or_child_system, predicted_direction_difference_2L1, SD_L1, n_L1, CLI_predicted) %>%
+             observation, data_collection, target_language, other_language, task_type, task_detailed, 
+             surface_overlap_author, target_or_child_system, predicted_direction_difference_2L1, SD_L1, n_L1, CLI_predicted) %>%
     # compute pooled means and standard deviations
     mutate(mean_2L1 = n_2L1/sum(n_2L1) * mean_2L1,
            mean_L1 = n_L1/sum(n_L1) * mean_L1,
@@ -67,6 +68,7 @@ forestPrepare <- function(dataset, useDataFilter=FALSE) {
   # Note about Confidence Interval:
   #    CI = [effectSize - 1.96 * SQRT(sampVar), effectSize + 1.96 * SQRT(sampVar)]
   oData <- data.frame(
+    observation = model1$data$observation,
     effectSize = model1$yi,
     sampVar = model1$vi,
     weight = weights.rma.mv(model1)
