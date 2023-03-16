@@ -71,7 +71,8 @@ forestPrepare <- function(dataset, useDataFilter=FALSE) {
     observation = model1$data$observation,
     effectSize = model1$yi,
     sampVar = model1$vi,
-    weight = weights.rma.mv(model1)
+    weight = weights.rma.mv(model1),
+    summary = summary(model1)
   )  
   oBack <- jsonlite::toJSON(oData)
   #  oBack <- jsonlite::toJSON(model1)
