@@ -13,7 +13,7 @@
     <RootNamespace>exceldata</RootNamespace>
     <InterpreterId>MSBuild|multil|$(MSBuildProjectFullPath)</InterpreterId>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>-i "d:/data files/tg/multil/data/Database_webapp_2022_v2.xlsx" -o "d:/data files/tg/multil/data/multilingual_data.json"</CommandLineArguments>
+    <CommandLineArguments>-i "d:/data files/tg/multil/data/Database_webapp_2023.xlsx" -o "d:/data files/tg/multil/data/multilingual_data_2023mar16.json"</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">

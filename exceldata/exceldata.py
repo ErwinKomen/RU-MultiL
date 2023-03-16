@@ -5,6 +5,7 @@ Read contents of the Excel fie used for MultiL
 import sys, getopt, os.path, importlib
 import os, sys
 import json
+import copy
 
 # Provide our standard error handling
 from utils import ErrHandle
@@ -20,10 +21,51 @@ def process_excel(oArgs):
 
     lExtracted = []
     bBack = False
+    method = "iterrows"
     oErr = ErrHandle()
     oExtracted = {}
     lFeature = []
     lData = []
+    lAddFeatures = [
+        { "Section": "Paper Description",
+          "Feature": "email_address",
+          "DataType": "string",
+          "WhoEnters": "-",
+          "Description": "-",
+          "Comment": "-",
+          "values": [ None ]
+        },
+        { "Section": "Paper Description",
+          "Feature": "verified_by_administrators",
+          "DataType": "boolean",
+          "WhoEnters": "-",
+          "Description": "-",
+          "Comment": "-",
+          "values": [ True, False ]
+        },
+        { "Section": "Paper Description",
+          "Feature": "task_detailed_other",
+          "DataType": "string",
+          "WhoEnters": "Author, checked and if necessary corrected by Chantal, Elise & Sharon",
+          "Description": "type of task in more detail",
+          "Comment": "-",
+          "values": [ None ]
+        },
+        { "Section": "Paper Description",
+          "Feature": "linguistic_property_other",
+          "DataType": "string",
+          "WhoEnters": "Author, checked and if necessary corrected by Chantal, Elise & Sharon",
+          "Description": "type of linguistic property studied",
+          "Comment": "-",
+          "values": [ None ]
+        },
+    ]
+    oAddValues = {
+      "email_address": None,
+      "verified_by_administrators": False,
+      "task_detailed_other": None,
+      "linguistic_property_other": None
+    }
 
     try:
         # Retrieve the parameters
@@ -92,42 +134,96 @@ def process_excel(oArgs):
             # Go to the next row
             row_num += 1
 
+        # Add [lFeature] with the default ones above - provided they are not yet in there
+        for oFeature in lAddFeatures:
+            sFieldName = oFeature['Feature']
+            # Check if it really is not in the data
+            if not sFieldName in dict_feature:
+                lFeature.append(oFeature)
+                dict_feature[sFieldName] = oFeature
+
         # Add the list of features to the object
         oExtracted['Features'] = lFeature
 
         # (2) Process the worksheet with the DATA
-        row_num = 1
-        # Process the first row with field names
-        lHeader = []
-        col_num = 1
-        while not ws_data.cell(row_num, col_num).value is None:
-            lHeader.append(ws_data.cell(row_num, col_num).value)
-            col_num += 1
+        if method == "iterrows":
+            # Iterate speedily
+            lHeader = []
+            bFirst = True
+            row_num = 1
+            for row in ws_data.iter_rows(min_row=1, min_col=1):
+                if row[0].value is None:
+                    break
+                oErr.Status("Reading data row {}".format(row_num))
+                if bFirst:
+                    # This is the first row: Expect header
+                    for cell in row:
+                        sValue = cell.value.strip("\t")
+                        lHeader.append(sValue)
+                    
+                    # Reset the first flag
+                    bFirst = False
+                elif not row[0].value is None:
+                    # This is a datarow
+                    oData = {}
+                    for idx, sFieldName in enumerate(lHeader):
+                        cell = row[idx]
+                        value = cell.value
+                        # Add k/v to oData
+                        oData[sFieldName] = value
+                        # Possibly add value to feature value dictionary
+                        if not value in dict_feature[sFieldName]['values']:
+                            dict_feature[sFieldName]['values'].append(value)
+                        value = cell.value
+                    # Also add the default features and values
+                    for k, v in oAddValues.items():
+                        if not k in oData:
+                            oData[k] = v
 
-        row_num = 2
-        while not ws_data.cell(row_num, 1).value is None:
-            oErr.Status("Reading data row {}".format(row_num))
-            # Process the values in this row
-            oData = {}
-            for idx, sFieldName in enumerate(lHeader):
-                col_num = idx + 1
-                # Get the value
-                value = ws_data.cell(row_num, col_num).value
-                # Add k/v to oData
-                oData[sFieldName] = value
-                # Possibly add value to feature value dictionary
-                if not value in dict_feature[sFieldName]['values']:
-                    dict_feature[sFieldName]['values'].append(value)
+                    # Add the data in the list
+                    lData.append(oData)
+                row_num += 1
+        else:
+            row_num = 1
+            # Process the first row with field names
+            lHeader = []
+            col_num = 1
+            while not ws_data.cell(row_num, col_num).value is None:
+                lHeader.append(ws_data.cell(row_num, col_num).value)
+                col_num += 1
 
-            # Add the data in the list
-            lData.append(oData)
+            row_num = 2
+            while not ws_data.cell(row_num, 1).value is None:
+                oErr.Status("Reading data row {}".format(row_num))
+                # Process the values in this row
+                oData = {}
+                for idx, sFieldName in enumerate(lHeader):
+                    col_num = idx + 1
+                    # Get the value
+                    value = ws_data.cell(row_num, col_num).value
+                    # Add k/v to oData
+                    oData[sFieldName] = value
+                    # Possibly add value to feature value dictionary
+                    if not value in dict_feature[sFieldName]['values']:
+                        dict_feature[sFieldName]['values'].append(value)
+                # Also add the default features and values
+                for k, v in oAddValues.items():
+                    if not k in oData:
+                        oData[k] = v
 
-            # Go to the next row
-            row_num += 1
+                # Add the data in the list
+                lData.append(oData)
+
+                # Go to the next row
+                row_num += 1
 
         # Walk the features once more, sorting the lists of values
-        oErr.Status("sorting values")
+        count_features = len(lFeature)
+        oErr.Status("sorting values. Number of features = {}".format(count_features))
+        num_feature = 0
         for k, oItem in dict_feature.items():
+            num_feature += 1
+            oErr.Status("Sorting feature #{}: {}".format(num_feature, k))
             try:
                 oItem['values'] = sorted(oItem['values'])
             except:
@@ -141,6 +237,9 @@ def process_excel(oArgs):
         # Save output
         with open(flOutput, "w", encoding="utf-8") as fp:
             json.dump(oExtracted, fp, indent=2)
+
+        # Indicate all went wel
+        bBack = True
     except:
         msg = oErr.get_error_message()
         oErr.DoError("process_excel")
