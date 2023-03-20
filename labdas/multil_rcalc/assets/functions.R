@@ -5,78 +5,154 @@ myRcode <- function(number, bericht) {
 
 
 # FUnction that assumes we are receiving the whole JSON data 
-forestPrepare <- function(dataset, useDataFilter=FALSE) {
+forestPrepare <- function(dataset, filtervar="", predictor="", useDataFilter=FALSE) {
   # Make sure the $Dataset part is read as a TIBBLE
-  dat <- dataset %>% as.tibble
-   
-  # Aanpassingen dataset o.b.v. welke predictor geselecteerd is
+  # dat <- dataset %>% as.tibble
   
-  # De volgende code moet ALTIJD gerund worden voor model1 (zie volgende sectie). 
-  # Daarnaast moet de dataset die uit deze code komt OOK gebruikt worden voor model2 
-  # als één van de volgende predictors geselecteerd is: 
-  #    target_language, task_type, task_detailed, linguistic_property, surface_overlap_author, target_or_child_system.
-  dat1 <- dat %>%
-    group_by(short_cite, task_number, linguistic_property, linguistic_property_detailed, monolingual_group,
-             # onderstaande rij variabelen zouden als het goed is altijd hetzelfde moeten zijn als we op bovenstaande variabelen gegroepeerd hebben -- heb ze hier alleen toegevoegd om te zorgen dat ze in de nieuwe dataset belanden
-             observation, data_collection, target_language, other_language, task_type, task_detailed, 
-             surface_overlap_author, target_or_child_system, predicted_direction_difference_2L1, SD_L1, n_L1, CLI_predicted) %>%
-    # compute pooled means and standard deviations
-    mutate(mean_2L1 = n_2L1/sum(n_2L1) * mean_2L1,
-           mean_L1 = n_L1/sum(n_L1) * mean_L1,
-           SD_2L1 = ((n_2L1 - 1)*SD_2L1^2)/(sum(n_2L1) - n())) %>% 
-    summarize(mean_2L1 = sum(mean_2L1),
-              mean_L1 = sum(mean_L1),
-              SD_2L1 = sqrt(sum(SD_2L1)),
-              n_2L1 = sum(n_2L1), # compute new sample size for 2L1
-              # create collapsed string value for bilingual_group:
-              bilingual_group = paste(sort(unique(bilingual_group)), collapse = "_")) %>%   
-    # re-compute effect sizes, their variances, se's and weights:
-    mutate(mean_difference = mean_2L1 - mean_L1,
-           d = ifelse(SD_2L1 == 0 && SD_L1 == 0, 0, abs(((mean_2L1 - mean_L1)/(sqrt((((n_2L1 - 1) * SD_2L1^2) + ((n_L1 - 1) * SD_L1^2)) / (n_2L1 + n_L1 - 2)))))),
-           g = d*(1 - (3/(4*(n_2L1 + n_L1 - 2) - 1))),
-           g_var = (((n_2L1 + n_L1)/(n_2L1*n_L1)) + (d^2/(2*(n_2L1 + n_L1))))*(1 - (3/(4*(n_2L1 + n_L1 - 2) - 1))),
-           g_SE = sqrt(g_var),
-           g_W = 1/g_var,
-           # change potential predictors to factors:
-           target_language = as.factor(target_language),
+  # Data klaarmaken voor de analyses
+  
+  # De volgende code moet gerund worden voorafgaand aan de analyses (maar na het filteren, als er ergens op gefilterd is).
+  dat <- dataset %>%
+    # change potential predictors to factors:
+    mutate(target_language = as.factor(target_language),
            task_type = as.factor(task_type), 
            task_detailed = as.factor(task_detailed), 
            linguistic_property = as.factor(linguistic_property), 
            surface_overlap_author = as.factor(surface_overlap_author), 
-           target_or_child_system = as.factor(target_or_child_system))
+           target_or_child_system = as.factor(target_or_child_system)) %>% 
+    # only include test cases of CLI
+    filter(CLI_predicted == "yes") %>% 
+    # compute average variance per sample 
+    group_by(sample) %>% 
+    mutate(g_var_avg = mean(g_var)) %>% 
+    ungroup()
   
-  # create g_correct_sign:
-  dat1$g_correct_sign <- 0   # placeholder 
-  for(i in 1:nrow(dat1)){
-    if( (dat1[i,]$mean_difference > 0 && dat1[i,]$predicted_direction_difference_2L1 == "higher") || (dat1[i,]$mean_difference < 0 && dat1[i,]$predicted_direction_difference_2L1 == "lower") || dat1[i,]$predicted_direction_difference_2L1 == "higher_or_lower" ){
-      dat1[i,]$g_correct_sign <- dat1[i,]$g
-    } else if( (dat1[i,]$mean_difference < 0 && dat1[i,]$predicted_direction_difference_2L1 == "higher") || (dat1[i,]$mean_difference > 0 && dat1[i,]$predicted_direction_difference_2L1 == "lower") || dat1[i,]$predicted_direction_difference_2L1 == "equal" ){
-      dat1[i,]$g_correct_sign <- -1*dat1[i,]$g
-    }
-  }
-  
-  # Use data filter or not?
-  if (useDataFilter) {
-      # only include test cases of CLI
-      dat1 <- dat1 %>% filter(CLI_predicted == "yes", target_language=="english")
-  }
-  
-  # zonder predictor(s)
-  model1 <- rma.mv(g_correct_sign, g_var, data = dat1, random = list(~ 1|data_collection/task_number, ~1|bilingual_group, ~1|linguistic_property))
-  
-  # Extract the effect-size ($yi) and the sampling variance ($vi) as well as the weight (determining the square-point size)
-  # Note about Confidence Interval:
-  #    CI = [effectSize - 1.96 * SQRT(sampVar), effectSize + 1.96 * SQRT(sampVar)]
+  # Extract the effect-size ($yi) and the sampling variance ($vi) as well as the include/skip list ($not.na) and the row name (dat1$short_cite)
   oData <- data.frame(
-    observation = model1$data$observation,
-    effectSize = model1$yi,
-    sampVar = model1$vi,
-    weight = weights.rma.mv(model1),
-    summary = summary(model1)
+    observation = dat$observation,
+    effectSize = dat$g_correct_sign,
+    sampVar = dat$g_var,
+    weight = 1 / dat$g_var
   )  
-  oBack <- jsonlite::toJSON(oData)
-  #  oBack <- jsonlite::toJSON(model1)
+  # Provide this as PlotData for the output
+  oPlotData <- jsonlite::toJSON(oData)
   
+  
+  # create variable that distinguishes different outcome measures (to be used in the vcalc function)
+  dat$outcome <- paste(dat$linguistic_property_detailed, dat$task_detailed, dat$target_language, sep = "-")
+  
+  # At this point we need to know whether a predictor is being provided or not
+  
+  if (predictor == "") {
+    # No predictor provided: using model1
+    
+    # create covariance matrices:
+    V0 <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0, data = dat)
+    
+    V0.6 <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0.6, data = dat)
+    
+    V0.95 <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0.95, data = dat)
+    
+    
+    # run models
+    meta1a <- rma.mv(g_correct_sign, V0.6, data = dat, random = ~ 1|research_group/data_collection/observation)
+    model1a <- conf_int(meta1a, vcov = "CR2")
+    
+    meta1b <- rma.mv(g_correct_sign, V0, data = dat, random = ~ 1|research_group/data_collection/observation)
+    model1b <- conf_int(meta1b, vcov = "CR2")
+    
+    meta1c <- rma.mv(g_correct_sign, V0.95, data = dat, random = ~ 1|research_group/data_collection/observation)
+    model1c <- conf_int(meta1c, vcov = "CR2")
+    
+    # Hele korte samenvatting van de analyse gebaseerd op het model zonder predictors (model 1): 
+    #  Number of studies, number of datapoints, effect size, confidence interval. 
+    #
+    # Create a 'short summary'
+    short_summary <- list(
+      # Number of studies
+      number_studies = length(unique(dat$short_cite)),
+      # Number of datapoints
+      number_data = nrow(dat),
+      # effect size
+      effect_size = model1a$beta,
+      # lower bound confidence interval
+      conf_lbound = model1a$CI_L,
+      # upper bound confidence interval
+      conf_ubound = model1a$CI_U
+    )
+    
+    # Uitgebreide samenvatting van model 1 als de gebruiker geen predictors geselecteerd heeft
+    extended_summary <- list(
+      # The model call - but as a string
+      model_call = capture.output(meta1a$call),
+      # de informatie die hierin staat t/m Test for Heterogeneity - as a string
+      summary = capture.output(summary(meta1a)),
+      # de informatie die hierin staat, achter Estimate én achter SE moet (r = 0.60) komen te staan
+      model1a = model1a,
+      # Hieruit de estimates en SEs met "(r = 0.0)" erachter
+      model1b = model1b,
+      # Hieruit de estimates en SEs met "(r = 0.95)" erachter
+      model1c = model1c
+    )
+    
+    
+  } else {
+    # A predictor is provided: using model 2
+    
+    # Filter eerst op alleen de positieve effect sizes en bereken dan opnieuw de covariance matrices:
+    
+    dat2 <- dat %>% filter(g_correct_sign >= 0)
+    
+    # create variance-covariance matrices:
+    V0b <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0, data = dat2)
+    V0.6b <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0.6, data = dat2)
+    V0.95b <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0.95, data = dat2)  
+  
+    # Filter eerst op alleen de positieve effect sizes en bereken dan opnieuw de covariance matrices:
+      
+    dat2 <- dat %>% filter(g_correct_sign >= 0)
+    
+    # create variance-covariance matrices:
+    V0b <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0, data = dat2)
+    V0.6b <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0.6, data = dat2)
+    V0.95b <- vcalc(g_var_avg, cluster = sample, type = outcome, grp1 = monolingual_group, grp2 = bilingual_group, w1 = n_L1, w2 = n_2L1, rho = 0.95, data = dat2)
+    
+    # Hierna kunnen de modellen gerund worden, waarbij “predictor” de predictor is die de gebruiker geselecteerd heeft:
+    meta2a <- rma.mv(g_correct_sign, V0.6b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
+    model2a <- conf_int(meta2a, vcov = "CR2")
+    
+    meta2b <- rma.mv(g_correct_sign, V0b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
+    model2b <- conf_int(meta2b, vcov = "CR2")
+    
+    meta2c <- rma.mv(g_correct_sign, V0.95b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
+    model2c <- conf_int(meta2c, vcov = "CR2")
+    
+    # LET OP: als de gebruiker target_or_child_system heeft gekozen als variabele, 
+    #   wordt naast target_or_child_system ook de predictor surface_overlap_author toegevoegd 
+    #   én de interactie tussen deze twee variabelen:
+    if (filtervar == "target_or_child") {
+      meta2a <- rma.mv(g_correct_sign, V0.6b, data = dat2, mods =~target_or_child_system*surface_overlap_author -1, random = ~ 1|research_group/data_collection/observation)
+      ## Warning: Rows with NAs omitted from model fitting.
+      model2a <- conf_int(meta2a, vcov = "CR2")
+      
+      meta2b <- rma.mv(g_correct_sign, V0b, data = dat2, mods = ~target_or_child_system*surface_overlap_author -1, random = ~ 1|research_group/data_collection/observation)
+      ## Warning: Rows with NAs omitted from model fitting.
+      model2b <- conf_int(meta2b, vcov = "CR2")
+      
+      meta2c <- rma.mv(g_correct_sign, V0.95b, data = dat2, mods = ~target_or_child_system*surface_overlap_author -1, random = ~ 1|research_group/data_collection/observation)
+      ## Warning: Rows with NAs omitted from model fitting.
+      model2c <- conf_int(meta2c, vcov = "CR2")
+      
+    }
+    
+  }
+  
+  # Combine the output: plotdata, short_summary, extended_summary
+  l <- list(plotdata = oPlotData, 
+            short = short_summary,
+            extended = extended_summary)
+  oBack <- jsonlite::toJSON(l)
+    
   # Return what we found
   return ( oBack )
 }
@@ -100,7 +176,7 @@ multilingEntry <- function(dataset, calling="") {
         return( oBack )
     } else if (calling == "usedatafilter") {
         # Call forest prepare
-        oBack <- forestPrepare(dataset, TRUE)
+        oBack <- forestPrepare(dataset, useDataFilter=TRUE)
 
         return( oBack )
     } else if (calling == "debug" | calling == "test") {

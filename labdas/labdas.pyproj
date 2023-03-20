@@ -50,6 +50,7 @@
     <Content Include="multil_list\requirements.txt" />
     <Content Include="multil_rcalc\assets\bootstrap.R" />
     <Content Include="multil_rcalc\assets\Dockerfile" />
+    <Content Include="multil_rcalc\assets\functionsBackup.R" />
     <Content Include="multil_rcalc\assets\functions.R" />
     <Content Include="multil_rcalc\assets\runtime.R" />
     <Content Include="multil_rcalc\requirements-dev.txt" />
