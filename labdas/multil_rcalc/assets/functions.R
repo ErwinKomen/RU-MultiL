@@ -165,18 +165,18 @@ forestPrepare <- function(dataset, filtervar="", predictor="", useDataFilter=FAL
 # - if 'debug' or 'test': return message 'alles goed'
 # - otherwise: signal that the command is not known
 # ----------------------------------------------------------------------------
-multilingEntry <- function(dataset, calling="") {
-    logdebug("Start multilingEntry '%s'", calling, logger = 'runtime')
+multilingEntry <- function(dataset, calling="", filtervar="", predictor="") {
+    logdebug("Start multilingEntry", logger = 'runtime')
 
     # This is the main entry point
     if (calling == "" | calling == "forestprepare") {
         # Call forest prepare
-        oBack <- forestPrepare(dataset)
+        oBack <- forestPrepare(dataset, filtervar, predictor)
 
         return( oBack )
     } else if (calling == "usedatafilter") {
         # Call forest prepare
-        oBack <- forestPrepare(dataset, useDataFilter=TRUE)
+        oBack <- forestPrepare(dataset, filtervar, predictor, useDataFilter=TRUE)
 
         return( oBack )
     } else if (calling == "debug" | calling == "test") {
