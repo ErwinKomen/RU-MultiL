@@ -669,13 +669,17 @@ $(document).ready(function() {
 			max: 120,
 			values: [21,67],
 			slide: function (event, ui) {
-				$("#mean_age").val(ui.values[0] + " - " + ui.values[1]);
+				var from = ui.values[0];
+				var to = ui.values[1];
+				$("#mean_age").val(formatMonths(from) + " - " + formatMonths(to));
 			},
 			animate: true,
 			orientation: "horizontal",
 		 });
 		 $('#mean_age_slider').slider( "value", 40 );
-		 $( "#mean_age") .val( $("#mean_age_slider") .slider ( "values", 0) + " - " + $ ( "#mean_age_slider") .slider ( "values", 1));
+		 var from = $("#mean_age_slider") .slider ( "values", 0);
+		 var to = $ ( "#mean_age_slider") .slider ( "values", 1);
+		 $( "#mean_age") .val(formatMonths(from) + " - " + formatMonths(to));
 
 		for (j=0; j < observation_keys.length; j++) {
 			var this_plot = 'row_plot_' + observation_keys[j];
@@ -683,6 +687,7 @@ $(document).ready(function() {
 		};
 
 		create_entry_form();
+		apply_filters()		
 	});	
 });
 
@@ -1100,6 +1105,15 @@ function exportToCsv(filename, rows, headers = false) {
         }
     }
 };
+
+function formatMonths(numMonths) {
+  const years = Math.floor(numMonths / 12);
+  const months = numMonths % 12;
+  const yearsStr = years > 0 ? years + "y" : "";
+  const monthsStr = months > 0 ? months + "m" : "";
+  return yearsStr + monthsStr;
+}
+
 </script>
 <div class="'container-fluid">
 <h2>Multilingualism meta-analysis</h2>
