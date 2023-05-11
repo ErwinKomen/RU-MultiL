@@ -228,6 +228,8 @@ function start_application(observation_keys)
 
 		return true;
 	}
+
+	apply_filters();
 }
 
 function get_forest_data() {
@@ -687,7 +689,6 @@ $(document).ready(function() {
 		};
 
 		create_entry_form();
-		apply_filters()		
 	});	
 });
 
