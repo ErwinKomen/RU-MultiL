@@ -15,6 +15,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<script src="forestplot.js"></script>
+
 <style>
 .thead-light th {
     color: lightgrey;
@@ -42,10 +44,16 @@ input[type="checkbox"]{
 	filter: invert(100%) hue-rotate(180deg) brightness(1.0);
 	cursor: pointer;
 }
-    #apply_age_range_filter{
-        outline: 0px solid white;
-    }
 
+.forest_plot
+{
+	float: left;
+}
+
+td
+{
+	padding-left: 5px;
+}
 
 </style>
 
@@ -453,8 +461,8 @@ var drawPlugins = [{
 
 // global dictionary for plotting data from observations and headers for table
 var forest_plot_data_map = {};
-var forest_plot_table_fields = ['short_cite', 'linguistic_property', 'plot', 'effectSize'];
-var forest_plot_table_headers = ['author(s) and year', 'linguistic property', '', 'effect size'];
+var forest_plot_table_fields = ['short_cite', 'linguistic_property', 'linguistic_property_detailed','plot', 'effectSize'];
+var forest_plot_table_headers = ['author(s) and year', 'linguistic property', '', '', 'effect size'];
 //var trial_ids = [8, 34, 41, 46, 55, 97];
 var trial_ids = [];
 
@@ -782,10 +790,7 @@ $(document).ready(function() {
 		
 		var lower_limit = 0;
 		var upper_limit = 0;
-		var filter_age_range = false;
-		if ($('#apply_age_range_filter').is(":checked")) {
-			var filter_age_range = true;
-		};
+		var filter_age_range = true;
 		if (filter_age_range) {
 			var mean_age_range = $('#mean_age').val();
 			var ranges = mean_age_range.split(" - ");
@@ -854,6 +859,7 @@ $(document).ready(function() {
 		};
 		
 		show_plots();
+		show_plots_table();
 		$("#result_size_indicator").html(studies.size + " studies, " + filtered_observation_ids.length + " observations");			
 	};
 
@@ -925,73 +931,36 @@ function show_plots_table() {
 	    forest_plot_data_map[observationID] = observation_dict;     
 	};
 	
-	var forest_table = '#forest_plots_table';
+	$('#forest_plot_authors').empty();
+	$('canvas').empty();
+	$('#forest_plot_extra_fields').empty();
 
-	var header = $("<thead>", { 'class': 'thead-light'});
-	$(forest_table).append(header);
-	var header_row_markup = $("<tr>", { 'class': 'observation_0 table-primary', 'id': 'row_observation_0' });
-	header.append(header_row_markup);
-	for (j=0; j < forest_plot_table_fields.length; j++) {
-            var this_field_id = 'plot_field_' + forest_plot_table_fields[j];
-			var this_value_id = 'plot_id_value_' + forest_plot_table_fields[j];
-			var this_value = forest_plot_table_headers[j];
-			var this_column_header = this_value.toUpperCase().replace(/_/g,' ');
-			var this_field = $("<th />", { 'class': this_field_id, 'id': this_value_id, text: this_column_header });
-			this_field.css('text-align','left');
-			header_row_markup.append(this_field);
-	};
-	header_row_markup.append("</tr>");
-	header.append("</thead>");
-	
-    var body_markup = $("<tbody>");
-	for (key in observation_keys) {
-		var observation_id = observation_keys[key];
-		var this_observation = 'row_plot_' + observation_id;
-		var row_class = 'observation_' + observation_id;
+	var forestPlotData = [];
+	for (key in filtered_observation_ids) 
+	{
+		var observation_id = filtered_observation_ids[key];
+
 		var this_dataset = 0;
 		for (j=0; j < dataset.length; j++) {
 			if (dataset[j].observation == observation_id) {
 				this_dataset = dataset[j]
 			}
 		};
+
     	if (!this_dataset) {
     		continue
     	}
-    	var row_markup = $("<tr>", { 'class':  row_class, 'id': this_observation });
-    	body_markup.append(row_markup);
-    	for (key in forest_plot_table_fields) {
-    		var this_field = forest_plot_table_fields[key];
-    		var this_field_id = 'field_' + this_field;
-    		if (this_field == 'plot') {
-    		      var canvas_div_id = 'canvas_plot_'+observation_id;
-    		      var canvas_div = $("<div />", { id: canvas_div_id });
-                  var column_cell = $("<td>", { 'class': this_field_id });
-                  column_cell.append(canvas_div);
-                  column_cell.append("</td>");
-    		      column_cell.css('text-align','left');
-    		      row_markup.append(column_cell);
-				  
-    		} else {
-    		      var this_value;
 
-				  if (this_field == 'effectSize')
-				  {
-					 this_value = this_dataset['g_correct_sign'];
-				  }
-				  else
-				  {
-					  this_value = this_dataset[this_field];
-				  }
-    		      
-				  var column_cell = $("<td />", { 'class': this_field_id, text: this_value });
-    		      column_cell.css('text-align','left');
-    		      row_markup.append(column_cell);
-    		};
-    	};
-    	row_markup.append("</tr>");
-    };
-    body_markup.append("</tbody>");
-    $(forest_table).append(body_markup);
+		var effectSize = this_dataset['g_correct_sign'];
+		var ci = this_dataset['g_SE'];
+
+		$('#forest_plot_authors').append('<tr><td>' + this_dataset['short_cite'] + '</td></tr>');
+		$('#forest_plot_extra_fields').append('<tr><td>' + this_dataset['linguistic_property'] + '</td><td>' + this_dataset['linguistic_property_detailed'] + '</td><td>' + effectSize + '</td></tr>');
+
+		forestPlotData.push({'authors':this_dataset['short_cite'], 'interval':[effectSize-ci,effectSize,effectSize+ci]});
+	}
+
+	drawForestPlot($('canvas').get(0),forestPlotData,[-3,5])
 }
 
 function generate_charts() {
@@ -1164,8 +1133,6 @@ function formatMonths(numMonths) {
 <div class="row m-2 border-left-0" style="width:25%;">
 	<div class="col" id="mean_age_selected" >
 	<span class="font-weight-normal">Choose mean_age_2L1</span>
-	<label class="form-check-label" for="apply_age_range_filter">&nbsp;</label>
-		<input class="form-check-input" id="apply_age_range_filter" name="apply_age_range_filter" type="checkbox" ><span>Age&nbsp;Range&nbsp;in&nbsp;Months</span>
 	<input type="text" id="mean_age" name="mean_age" style="border:0; color: black; font-size:18px;font-weight:bold;user-select:none;" readonly >
 	<div id="mean_age_slider">
 
@@ -1196,6 +1163,11 @@ function formatMonths(numMonths) {
 <p id="result_size_indicator">0 studies, 0 observations</p>
 	<div id="forest_plots" style="width:80%;padding-left:100px;">
 <br><br>
+
+<table class="forest_plot" id="forest_plot_authors"></table>
+<canvas class="forest_plot" id="forest_plot"></canvas>
+<table class="forest_plot" id="forest_plot_extra_fields"></table>
+
 <table id="forest_plots_table" class="table table-condensed table-hover" style="white-space:nowrap;width:100%;">
 </table>
 </div>

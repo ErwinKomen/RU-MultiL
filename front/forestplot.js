@@ -7,9 +7,8 @@ function getCanvasXCoordinate(canvas, x, xRange)
 
 function drawForestPlot(canvas, data, xRange) 
 {
-
     const verticalOffset = 10;
-    const verticalScale = 25;
+    const verticalScale = 26;
 
     canvas.height = data.length * verticalScale + verticalOffset * 2;
 
