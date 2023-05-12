@@ -124,14 +124,19 @@ var uitleg_features = {
 	'g_var' : 'variance of the effect size Hedges\' g',
 	'g_SE' : 'standard error of the effect size Hedges\' g',
 	'g_W' : 'weight of the effect size Hedges\' g',
-	'num_trials' : 'number of test trials for the specific linguistic property that the means are filled out for'
+	'num_trials' : 'number of test trials for the specific linguistic property that the means are filled out for',
+	'email_address' : 'your email address so that we contact you if necessary',
 };
 
 
 var filter_features = ['target_language', 'task_type', 'task_detailed', 'linguistic_property',
 						'target_or_child_system', 'dominance', 'language_home',
 						'societal_language'];
-var choice_features = ['published', 'CLI_predicted', 'predicted_direction_difference_2L1'];
+var add_other_features = ['task_detailed', 'linguistic_property'];
+var choice_features = ['surface_overlap_author','published', 'CLI_predicted', 'predicted_direction_difference_2L1'];
+var exclude_features = ['verified_by_administrators', 'task_detailed_other', 'linguistic_property_other'];
+var surface_overlap_author_choices = ['surface_overlap', 'no_surface_overlap', 'not_discussed', 'unknown'];
+
 var numerical_features = [];
 
 
@@ -536,10 +541,20 @@ function create_entry_form() {
 		row.append("</th>");
 		var key_value = $("<td>", { 'class':  this_value_id, 'id': this_value_id });
 		var key_input = '';
-		if (filter_features.includes(field_name) || choice_features.includes(field_name)) { 
+		if (exclude_features.includes(field_name))
+		{
+			continue;
+		}
+		
+		else if (filter_features.includes(field_name) || choice_features.includes(field_name)) { 
 			var choices = get_choices_from_filter_feature(field_name);
 			choices = get_unique_choices(choices);
-			//var placeholder = "Choose " + field_name;
+
+			if (add_other_features.includes(field_name))
+			{
+				choices.push('other');
+			}
+
 			key_input = $("<select>", { 'id': 'name_' + dataset_fields[j], 
 												'name': 'name_' + dataset_fields[j], 
 												'value': "",
@@ -855,7 +870,13 @@ $(document).ready(function() {
 		$("#result_size_indicator").html(studies.size + " studies, " + filtered_observation_ids.length + " observations");			
 	};
 
-	function get_choices_from_filter_feature(feature) {
+	function get_choices_from_filter_feature(feature) 
+	{
+		if (feature == 'surface_overlap_author')
+		{
+			return surface_overlap_author_choices;
+		}
+
 		var choices = dataset.map(d => d[feature]);
 		return choices
 	};
