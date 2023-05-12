@@ -1072,7 +1072,7 @@ function formatMonths(numMonths) {
   const years = Math.floor(numMonths / 12);
   const months = numMonths % 12;
   const yearsStr = years > 0 ? years + "y" : "";
-  const monthsStr = months > 0 ? months + "m" : "";
+  const monthsStr = months + "m";
   return yearsStr + monthsStr;
 }
 
