@@ -947,7 +947,7 @@ function show_plots_table() {
 		var ci = this_dataset['g_SE'];
 
 		$('#forest_plot_authors').append('<tr><td>' + this_dataset['short_cite'] + '</td></tr>');
-		$('#forest_plot_extra_fields').append('<tr><td>' + this_dataset['linguistic_property'] + '</td><td>' + this_dataset['linguistic_property_detailed'] + '</td><td>' + effectSize + '</td></tr>');
+		$('#forest_plot_extra_fields').append('<tr><td>' + this_dataset['linguistic_property'] + '</td><td>' + this_dataset['linguistic_property_detailed'] + '</td><td>' + effectSize.toFixed(2) + '</td></tr>');
 
 		forestPlotData.push({'authors':this_dataset['short_cite'], 'interval':[effectSize-ci,effectSize,effectSize+ci]});
 	}
