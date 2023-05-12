@@ -787,20 +787,12 @@ $(document).ready(function() {
 	function apply_filters() {
 
 		hide_observations();
-		
-		var lower_limit = 0;
-		var upper_limit = 0;
-		var filter_age_range = true;
-		if (filter_age_range) {
-			var mean_age_range = $('#mean_age').val();
-			var ranges = mean_age_range.split(" - ");
-			lower_limit = ranges[0];
-			upper_limit = ranges[1];
-		}
+
+		var lower_limit = $("#mean_age_slider") .slider ( "values", 0);
+		var upper_limit = $("#mean_age_slider") .slider ( "values", 1);
+
 		var display_fields = ['observation', 'short_cite'];
-		if (filter_age_range) {
-			display_fields.push('mean_age_2L1');
-		};
+		display_fields.push('mean_age_2L1');
 		var chosen_feature_filters = [];
 		for (key in filter_features) {
 			var next_feature = '#'+filter_features[key]+'_select';
@@ -818,7 +810,7 @@ $(document).ready(function() {
 
 		for (j=0; j < dataset.length; j++) {
 			var age_in_range = true;
-			if (filter_age_range && lower_limit != 0 && upper_limit != 0) {
+			if (lower_limit != 0 && upper_limit != 0) {
 				var mean_age_observation = dataset[j]['mean_age_2L1'];
 				if (lower_limit > mean_age_observation || mean_age_observation > upper_limit) {
 					age_in_range = false;
