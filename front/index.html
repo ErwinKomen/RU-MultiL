@@ -55,6 +55,12 @@ td
 	padding-left: 5px;
 }
 
+button.disabled
+{
+	pointer-events: none;
+	opacity: 0.4;
+}
+
 </style>
 
 <title>Cross-linguistic influence in simultaneous and early sequential bilingual children</title>
@@ -75,7 +81,7 @@ var dataset_fields = "";
 var dataset = [];
 var rows = [];
 var features = [];
-var uitleg_features = { 
+var explanationPerFeature = { 
 	'observation' : 'uniquely identifies a datapoint',
 	'short_cite' : 'short citation and, if relevant, the number of the experiment in the source paper',
 	'published' : 'indicates whether study is published in a peer-reviewed journal/book',
@@ -162,6 +168,18 @@ function start_application(observation_keys)
 	$(".wait_until_ready").show();
 	$('.js-basic-multiple').val('').trigger('change');
 	
+	for (fieldName in explanationPerFeature)
+	{
+		elem = document.getElementById('name_'+fieldName);
+
+		if (elem == null)
+		{
+			continue;
+		}
+
+		elem.addEventListener('input', update_save_button_status);
+	}
+
 	for (fieldName of ['mean_2L1', 'mean_L1', 'SD_2L1', 'SD_L1', 'n_2L1', 'n_L1', 'predicted_direction_difference_2L1'])
 	{
 		document.getElementById('name_'+fieldName).addEventListener('input',updateAutoCalculatedFields);	
@@ -169,6 +187,8 @@ function start_application(observation_keys)
 	
 	function updateAutoCalculatedFields()
 	{
+		console.log('updating auto-calculated fields');
+
 		var inputValues = {}
 		
 		for (fieldName of ['mean_2L1', 'mean_L1', 'SD_2L1', 'SD_L1', 'n_2L1', 'n_L1'])
@@ -297,8 +317,6 @@ function get_forest_data() {
          }
 	 })
 };
-
-
 
 var forest_plot_data_list = [];
 var number_of_plots = 0;
@@ -436,6 +454,7 @@ var options = {
       }
     }
   };
+
 // plugin to highlight location of data point on axis on hover
 var drawPlugins = [{
     afterDraw: chart => {
@@ -468,7 +487,6 @@ var drawPlugins = [{
 var forest_plot_data_map = {};
 var forest_plot_table_fields = ['short_cite', 'linguistic_property', 'linguistic_property_detailed','plot', 'effectSize'];
 var forest_plot_table_headers = ['author(s) and year', 'linguistic property', '', '', 'effect size'];
-//var trial_ids = [8, 34, 41, 46, 55, 97];
 var trial_ids = [];
 
 function fill_rows(dataset, dataset_fields) {
@@ -490,6 +508,13 @@ function fill_rows(dataset, dataset_fields) {
 };
 
 function save_new_observation(clear_mean_and_stdev_only) {
+
+	if (!all_obligatory_fields_filled()) 
+	{
+		console.log('not all obligatory fields filled');
+		return;
+	}
+
 	//var number_of_fields = dataset_fields.length - 1;
 	var empty_fields = [];
 	var new_fields_dict = {};
@@ -529,7 +554,7 @@ function create_entry_form() {
 
 	for (j=1; j < dataset_fields.length; j++) {
 		// j starts at 1 to skip field 'observation'
-		var uitleg_hover = uitleg_features[dataset_fields[j]];
+		var uitleg_hover = explanationPerFeature[dataset_fields[j]];
 		//console.log(uitleg_hover);
 		var field_name = dataset_fields[j];
 		var this_field_id = 'id_field_' + dataset_fields[j];
@@ -568,7 +593,7 @@ function create_entry_form() {
 			};
 			key_input.append("</select>");
 		} else {
-			//var uitleg_hover = uitleg_features[dataset_fields[j]];
+			//var uitleg_hover = explanationPerFeature[dataset_fields[j]];
 			//console.log(uitleg_hover);
 			key_input = $("<input>", { 'id': 'name_' + dataset_fields[j], 
 										'name': 'name_' + dataset_fields[j], 
@@ -582,7 +607,55 @@ function create_entry_form() {
 		row.append(key_value);
 		$(field_table_body).append(row).append("</tr>");
 	};
+
+	update_save_button_status();
 };
+
+function all_obligatory_fields_filled()
+{
+	var obligatoryFields = ['research_group','short_cite','published','data_collection',
+						'task_number','target_language','other_language','task_type',
+						'task_detailed','linguistic_property','linguistic_property_detailed',
+						'bilingual_group','monolingual_group','sample','surface_overlap_author',
+						'target_or_child_system','dominance','language_home',
+						'societal_language','CLI_predicted',
+						'predicted_direction_difference_2L1','mean_age_2L1','sd_age_2L1',
+						'age_min_2L1','age_max_2L1','mean_age_L1','sd_age_L1','age_min_L1',
+						'age_max_L1','n_2L1','n_L1', 'mean_2L1','mean_L1','SD_2L1','SD_L1',
+						'mean_difference','d','g','g_correct_sign','g_var','g_SE','g_W',
+						'email_address'
+					    ];
+
+	for (j=0; j < obligatoryFields.length; j++) 
+	{
+		var fieldValue = document.getElementById('name_'+obligatoryFields[j]).value;
+		console.log(fieldValue);
+		if (fieldValue.length == 0)
+		{
+			return false;
+		}		
+	}
+
+	return true;
+}
+
+function update_save_button_status()
+{
+	console.log('update_save_button_status');
+
+	if (all_obligatory_fields_filled())
+	{
+		$('button.save_button').removeClass('disabled');
+		$('p.obligatory_explanation').hide();
+		return;
+	}
+	else
+	{
+		$('button.save_button').addClass('disabled');
+		$('p.obligatory_explanation').show();
+		return;
+	}
+}
 
 $(document).ready(function() {
 	$(".wait_until_ready").hide();
@@ -692,7 +765,7 @@ $(document).ready(function() {
 			range: true,
 			min: 0,
 			max: 120,
-			values: [21,67],
+			values: [42,118],
 			slide: function (event, ui) {
 				var from = ui.values[0];
 				var to = ui.values[1];
@@ -948,6 +1021,9 @@ function show_plots_table() {
 	$('canvas').empty();
 	$('#forest_plot_extra_fields').empty();
 
+	$('#forest_plot_authors').append('<thead><tr><th>Study</th></tr></thead>');
+	$('#forest_plot_extra_fields').append('<thead><tr><th>Linguistic property</th><th>Linguistic property detailed</th><th>Effect size</th></tr></thead>');
+
 	var forestPlotData = [];
 	for (key in filtered_observation_ids) 
 	{
@@ -1201,8 +1277,9 @@ function formatMonths(numMonths) {
 	<br><br>
 	<div class="collapse" id="new_observations">
 		<form id="enter_observations" name="enter_observations">
-		<button type="button" onclick="save_new_observation(false)">Save and clear</button>
-		<button type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
+		<button class="save_button" type="button" onclick="save_new_observation(false)">Save and clear</button>
+		<button class="save_button" type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
+		<p class="obligatory_explanation">Please fill out all fields except num_trials.</p>
 		<br><br>
 		<table id="field_list" class="table table-condensed table-hover">
 		<thead id = "field_list_header">
@@ -1215,8 +1292,9 @@ function formatMonths(numMonths) {
 
 		</tbody>
 		</table>
-		<button type="button" onclick="save_new_observation(false)">Save and clear</button>
-		<button type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
+		<button class="save_button" type="button" onclick="save_new_observation(false)">Save and clear</button>
+		<button class="save_button" type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
+		<p class="obligatory_explanation">Please fill out all fields except num_trials.</p>
 
 		</form>
 	</div>
