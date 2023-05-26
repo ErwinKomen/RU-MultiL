@@ -187,8 +187,6 @@ function start_application(observation_keys)
 	
 	function updateAutoCalculatedFields()
 	{
-		console.log('updating auto-calculated fields');
-
 		var inputValues = {}
 		
 		for (fieldName of ['mean_2L1', 'mean_L1', 'SD_2L1', 'SD_L1', 'n_2L1', 'n_L1'])
@@ -279,7 +277,6 @@ function get_forest_data() {
             dsetclean.push(item);
             cleaned_observations.push(item.observation);
          } else {
-            //console.log(item);
             bad_observations.push(item.observation);
          }
      }
@@ -302,13 +299,10 @@ function get_forest_data() {
             console.log(rfiltermsg);
          } else {
             // We will have received an array of values
-            //console.log(post_response);
             var post_response_parsed = JSON.parse(post_response);
-            //console.log(post_response_parsed);
             for (i = 0; i < post_response_parsed.length; i++) {
          	   observation_id = cleaned_observations[i];
          	   var forest_data = post_response_parsed[i];
-         	   //console.log(forest_data);
             	forest_plot_data_dict[observation_id] = forest_data;
             };
 
@@ -341,7 +335,6 @@ function generate_forest_plot_data() {
 		var forest_plot_key = forest_plot_keys[j];
 		var this_observation = observations_by_id[forest_plot_key];		
 		var this_row = [];
-		console.log(forest_plot_key + " " + j);		
 		var sampVar = this_observation['sampVar'];
 		var effectSize = this_observation['effectSize'];
 		var weight = this_observation['weight'];
@@ -351,13 +344,11 @@ function generate_forest_plot_data() {
 			this_row.push((effectSize + 1.96 * Math.sqrt(sampVar)).toPrecision(3));
 			this_row.push((weight*4).toPrecision(3));
 		} else {
-			console.log('sampvar is zero for observation '+forest_plot_key);
 			this_row.push((effectSize - 1.96).toPrecision(3));
 			this_row.push(effectSize.toPrecision(3));
 			this_row.push((effectSize + 1.96).toPrecision(3));
 			this_row.push((weight*4).toPrecision(3));
 		};
-	//	console.log(this_row);
 		forest_plot_data_list.push(this_row);
 	};
 	number_of_plots = forest_plot_data_list.length;
@@ -509,11 +500,11 @@ function fill_rows(dataset, dataset_fields) {
 
 function save_new_observation(clear_mean_and_stdev_only) {
 
-	if (!all_obligatory_fields_filled()) 
-	{
-		console.log('not all obligatory fields filled');
-		return;
-	}
+	//if (!all_obligatory_fields_filled()) 
+	//{
+	//	console.log('not all obligatory fields filled');
+	//	return;
+	//}
 
 	//var number_of_fields = dataset_fields.length - 1;
 	var empty_fields = [];
@@ -535,7 +526,7 @@ function save_new_observation(clear_mean_and_stdev_only) {
 			$(field_value).val('');
 		}
 	}
-	console.log(empty_fields);
+
 	var set_fields = '';
 	for (key in new_fields_dict) {
 		set_fields = set_fields + "\n(" + key + ",\t" + new_fields_dict[key] + ")"
@@ -547,6 +538,40 @@ function save_new_observation(clear_mean_and_stdev_only) {
 	} else {
 		alert("SAVE:\n"+set_fields);
 	}
+
+	console.log(new_fields_dict);
+
+	aws_url = 'https://rkxy8021l6.execute-api.eu-central-1.amazonaws.com/Prod/add';
+
+	var data = {}
+	data['observation'] = observation_keys.length; //Here a new ID is chosen
+
+	var data_keys = [
+    "short_cite", "published", "data_collection", "task_number",
+    "target_language", "other_language", "task_type", "task_detailed", "linguistic_property",
+    "linguistic_property_detailed","bilingual_group", "monolingual_group",
+    "surface_overlap_author", "target_or_child_system", "dominance", "language_home",
+    "societal_language", "CLI_predicted", "predicted_direction_difference_2L1",
+    "mean_age_2L1", "sd_age_2L1", "age_min_2L1", "age_max_2L1", "mean_age_L1",
+    "sd_age_L1", "age_min_L1", "age_max_L1", "n_2L1", "n_L1", "mean_2L1",
+    "mean_L1", "SD_2L1", "SD_L1", "mean_difference", "t", "t_correct_sign",
+    "d", "g", "g_correct_sign", "g_var", "g_SE", "g_W", "num_trials"
+    ]
+
+	for (j=0; j < data_keys.length; j++) 
+	{
+		var key = data_keys[j];
+		if (key in new_fields_dict)
+		{
+			data[key] = new_fields_dict[key];
+		}
+		else
+		{
+			data[key] = '';
+		}
+	}
+
+	$.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 'data':[data]}));
 }
 
 function create_entry_form() {
@@ -555,7 +580,6 @@ function create_entry_form() {
 	for (j=1; j < dataset_fields.length; j++) {
 		// j starts at 1 to skip field 'observation'
 		var uitleg_hover = explanationPerFeature[dataset_fields[j]];
-		//console.log(uitleg_hover);
 		var field_name = dataset_fields[j];
 		var this_field_id = 'id_field_' + dataset_fields[j];
 		var this_key_id = 'id_key_' + dataset_fields[j];
@@ -613,6 +637,8 @@ function create_entry_form() {
 
 function all_obligatory_fields_filled()
 {
+	return true;
+
 	var obligatoryFields = ['research_group','short_cite','published','data_collection',
 						'task_number','target_language','other_language','task_type',
 						'task_detailed','linguistic_property','linguistic_property_detailed',
@@ -641,8 +667,6 @@ function all_obligatory_fields_filled()
 
 function update_save_button_status()
 {
-	console.log('update_save_button_status');
-
 	if (all_obligatory_fields_filled())
 	{
 		$('button.save_button').removeClass('disabled');
@@ -1085,17 +1109,14 @@ function generate_charts() {
 };
 
 function show_plots() {
-	console.log('show plots');
 	var forest_plot_keys = Object.keys(forest_plot_data_dict);
-	//console.log('show_plots: forest plot keys: '+forest_plot_keys);
-	//console.log('filtered observation ids: '+filtered_observation_ids);
+
 	for (j=0; j < observation_keys.length; j++) {
 		var this_plot = '#row_plot_' + observation_keys[j];
 		$(this_plot).css('display','none');
 	};
 	for (key in filtered_observation_ids) {
 		var plot_to_show = filtered_observation_ids[key];
-		//console.log('show plot '+filtered_observation_ids[key]);
 		var this_plot = '#row_plot_' + filtered_observation_ids[key];
 		$(this_plot).css('display', 'table-row');
 	};
@@ -1219,6 +1240,10 @@ function formatMonths(numMonths) {
 
 	</div>
 </div>
+<div>
+	<input type="checkbox"> <span class="font-weight-normal">In paper</span>
+</div>
+
 <div class="row m-2 border-left-0" style="width:25%;">
 	<div class="col" id="mean_age_selected" >
 	<span class="font-weight-normal">Choose mean_age_2L1</span>
@@ -1230,6 +1255,7 @@ function formatMonths(numMonths) {
 	<div></div><div></div><div></div>
 
 </div>
+
 </form>
 <br>
 <div class="card-footer">
