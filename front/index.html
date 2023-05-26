@@ -950,7 +950,9 @@ $(document).ready(function() {
 				};
 				features_match_filter = features_match_filter && isMatch;
 			};
-			if (age_in_range && features_match_filter) {
+
+			var CLI_predicted = dataset[j]['CLI_predicted'] == 'yes';
+			if (age_in_range && features_match_filter && CLI_predicted) {
 				filtered_observation_ids.push(dataset[j].observation);
 				filtered_observations.push(dataset[j]);
 				studies.add(dataset[j]['short_cite']);
