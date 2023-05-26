@@ -145,7 +145,10 @@ var filter_features = ['target_language', 'task_type', 'task_detailed', 'linguis
 						'target_or_child_system', 'dominance', 'language_home',
 						'societal_language'];
 var add_other_features = ['task_detailed', 'linguistic_property'];
-var choice_features = ['surface_overlap_author','published', 'CLI_predicted', 'predicted_direction_difference_2L1'];
+var choice_features = ['task_type', 'task_detailed', 'linguistic_property',
+						'target_or_child_system', 'dominance', 'language_home',
+						'societal_language','surface_overlap_author','published', 'CLI_predicted', 
+						'predicted_direction_difference_2L1'];
 var exclude_features = ['verified_by_administrators', 'task_detailed_other', 'linguistic_property_other'];
 var surface_overlap_author_choices = ['surface_overlap', 'no_surface_overlap', 'not_discussed', 'unknown'];
 
@@ -506,11 +509,11 @@ function fill_rows(dataset, dataset_fields) {
 
 function save_new_observation(clear_mean_and_stdev_only) {
 
-	//if (!all_obligatory_fields_filled()) 
-	//{
-	//	console.log('not all obligatory fields filled');
-	//	return;
-	//}
+	if (!all_obligatory_fields_filled()) 
+	{
+		console.log('not all obligatory fields filled');
+		return;
+	}
 
 	//var number_of_fields = dataset_fields.length - 1;
 	var empty_fields = [];
@@ -601,7 +604,7 @@ function create_entry_form() {
 			continue;
 		}
 		
-		else if (filter_features.includes(field_name) || choice_features.includes(field_name)) { 
+		else if (choice_features.includes(field_name)) { 
 			var choices = get_choices_from_filter_feature(field_name);
 			choices = get_unique_choices(choices);
 
@@ -643,8 +646,6 @@ function create_entry_form() {
 
 function all_obligatory_fields_filled()
 {
-	return true;
-
 	var obligatoryFields = ['research_group','short_cite','published','data_collection',
 						'task_number','target_language','other_language','task_type',
 						'task_detailed','linguistic_property','linguistic_property_detailed',
