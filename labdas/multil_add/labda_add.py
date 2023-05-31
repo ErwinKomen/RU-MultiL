@@ -23,8 +23,18 @@ data_keys = [
     "societal_language", "CLI_predicted", "predicted_direction_difference_2L1",
     "mean_age_2L1", "sd_age_2L1", "age_min_2L1", "age_max_2L1", "mean_age_L1",
     "sd_age_L1", "age_min_L1", "age_max_L1", "n_2L1", "n_L1", "mean_2L1",
-    "mean_L1", "SD_2L1", "SD_L1", "mean_difference", "t", "t_correct_sign",
-    "d", "g", "g_correct_sign", "g_var", "g_SE", "g_W", "num_trials"
+    "mean_L1", "SD_2L1", "SD_L1", "mean_difference", 
+    "d", "g", "g_correct_sign", "g_var", "g_SE", "g_W", "num_trials",
+
+    # Newly added keys:
+    "research_group", "sample"
+
+    # Obsolete keys:
+    # "t", "t_correct_sign",
+
+    # Keys that are not checked:
+    # "email_address", "verified_by_administrators", "task_detailed_other",
+    # "linguistic_property_other"
     ]
 
 class ErrHandle:
@@ -107,16 +117,24 @@ def is_good_datarow(oRow):
         # Double check that this is in fact a dictionary
         if isinstance(oRow, dict):
             # Good, we have a dictionary: check whether all keys are there
-            oKeys = {}
+            lst_keys = []
+            # Old method: oKeys = {}
             for k,v in oRow.items():
-                if k in oKeys:
-                    oKeys[k] += 1
-                else:
-                    oKeys[k] = 0
-            bBack = (len(data_keys) == len(oKeys))
+                # Old method:
+                #if k in oKeys:
+                #    oKeys[k] += 1
+                #else:
+                #    oKeys[k] = 0
+
+                # New method, see issue #32
+                if k in data_keys and not k in lst_keys:
+                    lst_keys.append(k)
+            # Old method: bBack = (len(data_keys) == len(oKeys))
+            bBack = (len(data_keys) == len(lst_keys))
             if not bBack:
                 # Create a message
-                msg = "Datarow should contain {} keys, but only {} were found.".format(len(data_keys), len(oKeys))
+                # Old method msg = "Datarow should contain {} keys, but only {} were found.".format(len(data_keys), len(oKeys))
+                msg = "Datarow should contain {} obl. keys, but only {} of them were found.".format(len(data_keys), len(lst_keys))
     except:
         msg = oErr.get_error_message()
         print(msg)
