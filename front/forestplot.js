@@ -32,13 +32,14 @@ function drawForestPlot(canvas, data, xRange)
     // X labels
     ctx.font = "12px Arial";
 
-    // Display the text "Hello, world!" at coordinates (50, 50)
     for (var i = 0; i < xRangeLength; i++) 
     {
         var x = xRange[0] + i;
         var xCoordinate = getCanvasXCoordinate(canvas, x, xRange);
-        ctx.fillText(i+xRange[0], xCoordinate, canvas.height - 10);
+        ctx.fillText(i+xRange[0], xCoordinate, canvas.height - 20);
     }
+
+    ctx.fillText("Effect size (Hedges' g)", getCanvasXCoordinate(canvas, -1.5, xRange), canvas.height - 5);
 
     for (var i = 0; i < data.length; i++) 
     {
