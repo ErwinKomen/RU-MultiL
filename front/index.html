@@ -67,6 +67,11 @@ div.basic_filter
 	width: 300px;
 }
 
+#extended_summary
+{
+	font-family: "Cascadia", monospace;
+}
+
 </style>
 
 <title>Cross-linguistic influence in simultaneous and early sequential bilingual children</title>
@@ -89,9 +94,9 @@ var rows = [];
 var features = [];
 var explanationPerFeature = { 
 	'observation' : 'uniquely identifies a datapoint',
-	'short_cite' : 'short citation and, if relevant, the number of the experiment in the source paper',
+	'short_cite' : 'short citation and, if relevant, the number of the experiment in the source paper (e.g. Meroni et al. (2017), Exp 1)',
 	'published' : 'indicates whether study is published in a peer-reviewed journal/book',
-	'data_collection' : 'uniquely identifies data belonging to the same round of data collection',
+	'data_collection' : 'uniquely identifies data belonging to the same round of data collection (e.g., Foroodi_Nejad2009)',
 	'task_number' : 'task number within an experiment/study in the source paper (notes: differentiates between tasks in different languages)',
 	'target_language' : 'language of testing',
 	'other_language' : 'other language of bilingual children',
@@ -137,7 +142,7 @@ var explanationPerFeature = {
 	'g_SE' : 'standard error of the effect size Hedges\' g',
 	'g_W' : 'weight of the effect size Hedges\' g',
 	'num_trials' : 'number of test trials for the specific linguistic property that the means are filled out for',
-	'email_address' : 'your email address so that we contact you if necessary',
+	'email_address' : 'your email address so that we can contact you if necessary',
 };
 
 
@@ -149,7 +154,7 @@ var choice_features = ['task_type', 'task_detailed', 'linguistic_property',
 						'target_or_child_system', 'dominance', 'language_home',
 						'societal_language','surface_overlap_author','published', 'CLI_predicted', 
 						'predicted_direction_difference_2L1'];
-var exclude_features = ['verified_by_administrators', 'task_detailed_other', 'linguistic_property_other'];
+var exclude_features = ['verified_by_administrators', 'task_detailed_other', 'linguistic_property_other','research_group','sample'];
 var surface_overlap_author_choices = ['surface_overlap', 'no_surface_overlap', 'not_discussed', 'unknown'];
 
 var numerical_features = [];
@@ -272,15 +277,25 @@ function start_application(observation_keys)
 	apply_filters();
 }
 
-function get_forest_data() {
-
+function get_forest_data(filtered) 
+{
 	var dsetclean = []
 	
      // Now call the /rforest method
 
+	var forest_data;
+	if (filtered)
+	{
+		forest_data = filtered_observations;
+	}
+	else
+	{
+		forest_data = dataset;
+	}
+
      // First clean up the dataset to something where there are no "MD" in SD_L1
-     for (i = 0; i < dataset.length; i++) {
-         var item = dataset[i];
+     for (i = 0; i < forest_data.length; i++) {
+         var item = forest_data[i];
          if (item['SD_L1'] !== "MD" && item['SD_L1'] !== "NA") {
             // We may copy it
             dsetclean.push(item);
@@ -293,7 +308,15 @@ function get_forest_data() {
      // UNCLEAN: data = { calling: "usedatafilter", dataset: dataset };
      // Using CLEANED data
      // data = { calling: "usedatafilter", dataset: dsetclean };
-     data = { dataset: dsetclean };
+     data = { dataset: dsetclean};
+
+	 var predictor = $('#predictor').val();
+
+	 if (predictor != "None")
+	 {
+		 data['predictor'] = predictor;
+		 data['filter_var'] = 'task_type';
+	 }
 
      // Make sure to STRINGIFY the data, so that it is in the body
      $.post(url_forest, JSON.stringify(data), function (post_response) {
@@ -316,10 +339,58 @@ function get_forest_data() {
             };
 
             generate_forest_plot_data();
-			start_application(observation_keys);
+
+			if (!filtered)
+			{
+				start_application(observation_keys);
+			}
+
+			add_extended_summary(post_response_parsed);
          }
 	 })
 };
+
+function add_extended_summary(post_response_parsed)
+{
+	$('#effect_size').html(post_response_parsed['short']['effect_size']);
+	$('#confidence_interval').html(post_response_parsed['short']['conf_lbound'] + ' - ' + post_response_parsed['short']['conf_ubound']);
+	$("extended_summary").html("");
+
+	const use_nr_of_summary_lines = 19;
+	for (var i = 0; i < use_nr_of_summary_lines && i < post_response_parsed['extended']['summary'].length; i++) 
+	{
+		var summary_line = post_response_parsed['extended']['summary'][i];
+		$('#extended_summary').append(summary_line + '<br>');
+	}
+
+	var model1a = post_response_parsed['extended']['model1a'][0];
+	var model1b = post_response_parsed['extended']['model1b'][0];
+	var model1c = post_response_parsed['extended']['model1c'][0];
+
+	var extra_lines = ['<br>',
+						'Model1a<br>',
+						'Coef '+model1a['Coef']+'<br>',
+						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
+						'SE (r = 0.60) '+model1a['SE']+'<br>',
+						'd.f. '+model1a['df']+'<br>',
+						'Lower 95% CI '+model1a['CI_L']+'<br>',
+						'Upper 95% CI '+model1a['CI_U']+'<br>',
+						'<br>',
+						'Model1b<br>',
+						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
+						'SE (r = 0.60) '+model1a['SE']+'<br>',
+						'<br>',
+						'Model1c<br>',
+						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
+						'SE (r = 0.60) '+model1a['SE']+'<br>',
+						'Note that analyses with a predictor are based on positive effect sizes only (see van Dijk et al., 2021)'
+					]
+
+	for (var i = 0; i < extra_lines.length; i++)
+	{
+		$('#extended_summary').append(extra_lines[i]);
+	}	
+}
 
 var forest_plot_data_list = [];
 var number_of_plots = 0;
@@ -790,7 +861,7 @@ $(document).ready(function() {
 		     });
 		 });
 		 
-		get_forest_data();	
+		get_forest_data(false);	
 	
 		 for (j=0; j < dataset_fields.length; j++) {
 			var this_column = '.field_' + dataset_fields[j];
@@ -987,6 +1058,7 @@ $(document).ready(function() {
 			$(this_observation).css('display', 'table-row');
 		};
 		
+		get_forest_data(true);
 		show_plots();
 		show_plots_table();
 		$("#result_size_indicator").html(studies.size + " studies, " + filtered_observation_ids.length + " observations");			
@@ -1126,7 +1198,7 @@ function generate_charts() {
         var canvasElt = document.createElement("canvas");
         canvasElt.id =  plot_id;
         canvasElt.width = 500;
-        canvasElt.height = 80;
+        canvasElt.height = 90;
         document.getElementById(canvas_div_id).appendChild(canvasElt);
         var chart = new Chart(plot_id, config);
         //console.log('new chart created: '+plot_id);
@@ -1272,15 +1344,16 @@ function formatMonths(numMonths) {
 
 <div class="basic_filter">
 	<span>Predictor variable</span>
-	<select>
-		<option>Target language</option>
-		<option>Task type</option>
-		<option>Linguistic property</option>
-		<option>Task detailed</option>
-		<option>Target or child system</option>
-		<option>Dominance</option>
-		<option>Language home</option>
-		<option>Societal language</option>
+	<select id="predictor">
+		<option value="None">None</option>
+		<option value="target_language">Target language</option>
+		<option value="task_type">Task type</option>
+		<option value="linguistic_property">Linguistic property</option>
+		<option value="task_detailed">Task detailed</option>
+		<option value="target_or_child_system">Target or child system</option>
+		<option value="dominance">Dominance</option>
+		<option value="language_home">Language home</option>
+		<option value="societal_language">Societal language</option>
 	</select>
 </div>
 
@@ -1328,6 +1401,19 @@ function formatMonths(numMonths) {
 </div>
 </div>
 </div>
+</div>
+
+<div id="statistical_summary">
+	<strong>Effect size</strong> <span id="effect_size"></span> <strong>Confidence interval</strong> <span id="confidence_interval"></span>
+</div>
+
+<div id="interface_extended_summary" class="wait_until_ready">
+	<button class="btn btn-outline-secondary" type="button" data-toggle="collapse" 
+		data-target="#extended_summary" aria-expanded="false" aria-controls="extended_summary">Extended summary</button>
+	<br><br>
+	<div class="collapse" id="extended_summary"></div>
+</div>
+
 <br><br>
 <div id="export_data" class="wait_until_ready">
 	<h3>Export Dataset</h3>
@@ -1345,7 +1431,7 @@ function formatMonths(numMonths) {
 		<form id="enter_observations" name="enter_observations">
 		<button class="save_button" type="button" onclick="save_new_observation(false)">Save and clear</button>
 		<button class="save_button" type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
-		<p class="obligatory_explanation">Please fill out all fields except num_trials.</p>
+		<p class="obligatory_explanation">Please fill out all fields. Some fields will be calculated automatically. Note: num_trials can be left open if not applicable. See the manual for more specific instructions on how to fill out each field.</p>
 		<br><br>
 		<table id="field_list" class="table table-condensed table-hover">
 		<thead id = "field_list_header">
@@ -1360,7 +1446,7 @@ function formatMonths(numMonths) {
 		</table>
 		<button class="save_button" type="button" onclick="save_new_observation(false)">Save and clear</button>
 		<button class="save_button" type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
-		<p class="obligatory_explanation">Please fill out all fields except num_trials.</p>
+		<p class="obligatory_explanation">Please fill out all fields. Some fields will be calculated automatically. Note: num_trials can be left open if not applicable. See the manual for more specific instructions on how to fill out each field.</p>
 
 		</form>
 	</div>
