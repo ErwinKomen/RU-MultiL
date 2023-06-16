@@ -310,12 +310,13 @@ function get_forest_data(filtered)
      // data = { calling: "usedatafilter", dataset: dsetclean };
      data = { dataset: dsetclean};
 
+	 var usingPredictor = false;
 	 var predictor = $('#predictor').val();
 
 	 if (predictor != "None")
 	 {
 		 data['predictor'] = predictor;
-		 data['filter_var'] = 'task_type';
+		 usingPredictor = true;
 	 }
 
      // Make sure to STRINGIFY the data, so that it is in the body
@@ -345,51 +346,77 @@ function get_forest_data(filtered)
 				start_application(observation_keys);
 			}
 
-			add_extended_summary(post_response_parsed);
+			add_extended_summary(post_response_parsed, usingPredictor);
          }
 	 })
 };
 
-function add_extended_summary(post_response_parsed)
+function add_extended_summary(post_response_parsed, usingPredictor)
 {
-	$('#effect_size').html(post_response_parsed['short']['effect_size']);
-	$('#confidence_interval').html(post_response_parsed['short']['conf_lbound'] + ' - ' + post_response_parsed['short']['conf_ubound']);
-	$("extended_summary").html("");
+	if (!usingPredictor)
+	{
+		$('#effect_size').html(post_response_parsed['short']['effect_size']);
+		$('#confidence_interval').html(post_response_parsed['short']['conf_lbound'] + ' - ' + post_response_parsed['short']['conf_ubound']);
+	}
+	else
+	{
+		$('#effect_size').html("");
+		$('#confidence_interval').html("");
+	}
+
+	var extended_summary = [];
 
 	const use_nr_of_summary_lines = 19;
 	for (var i = 0; i < use_nr_of_summary_lines && i < post_response_parsed['extended']['summary'].length; i++) 
 	{
-		var summary_line = post_response_parsed['extended']['summary'][i];
-		$('#extended_summary').append(summary_line + '<br>');
+		extended_summary.push(post_response_parsed['extended']['summary'][i]);
 	}
 
-	var model1a = post_response_parsed['extended']['model1a'][0];
-	var model1b = post_response_parsed['extended']['model1b'][0];
-	var model1c = post_response_parsed['extended']['model1c'][0];
+	var models_to_use;
+	var r_to_use = [0.6, 0, 0.95];
 
-	var extra_lines = ['<br>',
-						'Model1a<br>',
-						'Coef '+model1a['Coef']+'<br>',
-						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
-						'SE (r = 0.60) '+model1a['SE']+'<br>',
-						'd.f. '+model1a['df']+'<br>',
-						'Lower 95% CI '+model1a['CI_L']+'<br>',
-						'Upper 95% CI '+model1a['CI_U']+'<br>',
-						'<br>',
-						'Model1b<br>',
-						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
-						'SE (r = 0.60) '+model1a['SE']+'<br>',
-						'<br>',
-						'Model1c<br>',
-						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
-						'SE (r = 0.60) '+model1a['SE']+'<br>',
-						'Note that analyses with a predictor are based on positive effect sizes only (see van Dijk et al., 2021)'
-					]
-
-	for (var i = 0; i < extra_lines.length; i++)
+	if (usingPredictor)
 	{
-		$('#extended_summary').append(extra_lines[i]);
-	}	
+		models_to_use = ['model2a', 'model2b', 'model12c'];
+	}
+	else
+	{
+		models_to_use = ['model1a', 'model1b', 'model1c'];
+	}
+
+	for (var model_index = 0; model_index < models_to_use.length; model_index++)
+	{
+		var model_name = models_to_use[model_index];
+		var r = r_to_use[model_index];
+		var all_model_results = post_response_parsed['extended'][model_name];
+
+		for (var i = 0; i < all_model_results.length; i++)
+		{
+			var model_results = all_model_results[i];
+			extended_summary = extended_summary.concat(summarize_model_results(model_name,model_results, r, model_index==0));
+		}
+	}
+
+	extended_summary.push('Note that analyses with a predictor are based on positive effect sizes only (see van Dijk et al., 2021)');
+	$('#extended_summary').html(extended_summary.join('<br>'));
+}
+
+function summarize_model_results(model_name, model_results, r, includeDFAndCI)
+{
+	var summary = ['',
+					model_name,
+					'Coef '+model_results['Coef'],
+					'Estimate (r = '+r+') '+model_results['beta'],
+					'SE (r = '+r+') '+model_results['SE']];
+
+	if (includeDFAndCI)
+	{
+		summary.push('d.f. '+model_results['df']);
+		summary.push('Lower 95% CI '+model_results['CI_L']);
+		summary.push('Upper 95% CI '+model_results['CI_U']);
+	}
+
+	return summary;
 }
 
 var forest_plot_data_list = [];
@@ -559,6 +586,7 @@ var forest_plot_data_map = {};
 var forest_plot_table_fields = ['short_cite', 'linguistic_property', 'linguistic_property_detailed','plot', 'effectSize'];
 var forest_plot_table_headers = ['author(s) and year', 'linguistic property', '', '', 'effect size'];
 var trial_ids = [];
+var next_new_observation_id = 0;
 
 function fill_rows(dataset, dataset_fields) {
 	var header = [];
@@ -655,9 +683,19 @@ function save_new_observation(clear_mean_and_stdev_only) {
 		}
 	}
 
+	data['research_group'] = 'to be filled by admins';
 	data['verified_by_administrators'] = false;
 	console.log(Math.max(observation_keys));
-	data['observation'] = Math.max(...observation_keys)+1; //Here a new ID is chosen
+
+	if (next_new_observation_id == 0)
+	{
+		data['observation'] = Math.max(...observation_keys)+1; //Here a new ID is chosen
+	}
+	else
+	{
+		data['observation'] = next_new_observation_id;
+	}
+	next_new_observation_id = data['observation']+1;
 
 	aws_url = 'https://rkxy8021l6.execute-api.eu-central-1.amazonaws.com/Prod/add';
 	$.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 'data':[data]}));
@@ -726,10 +764,10 @@ function create_entry_form() {
 
 function all_obligatory_fields_filled()
 {
-	var obligatoryFields = ['research_group','short_cite','published','data_collection',
+	var obligatoryFields = ['short_cite','published','data_collection',
 						'task_number','target_language','other_language','task_type',
 						'task_detailed','linguistic_property','linguistic_property_detailed',
-						'bilingual_group','monolingual_group','sample','surface_overlap_author',
+						'bilingual_group','monolingual_group','surface_overlap_author',
 						'target_or_child_system','dominance','language_home',
 						'societal_language','CLI_predicted',
 						'predicted_direction_difference_2L1','mean_age_2L1','sd_age_2L1',
