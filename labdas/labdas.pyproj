@@ -12,7 +12,7 @@
     <OutputPath>.</OutputPath>
     <Name>labdas</Name>
     <RootNamespace>labdas</RootNamespace>
-    <InterpreterId>MSBuild|multil|$(MSBuildProjectFullPath)</InterpreterId>
+    <InterpreterId>MSBuild|multil39|$(MSBuildProjectFullPath)</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -69,6 +69,15 @@
     <Folder Include="multil_delete\" />
   </ItemGroup>
   <ItemGroup>
+    <Interpreter Include="..\..\..\..\..\env\multil39\">
+      <Id>multil39</Id>
+      <Version>3.9</Version>
+      <Description>multil39 (Python 3.9 (64-bit))</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
     <Interpreter Include="..\..\..\..\..\env\multil\">
       <Id>multil</Id>
       <Version>3.7</Version>

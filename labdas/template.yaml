@@ -18,7 +18,7 @@ Resources:
     Properties:
       CodeUri: multil_list/
       Handler: labda_list.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.9
       Architectures:
         - x86_64
       Events:
@@ -32,7 +32,7 @@ Resources:
     Properties:
       CodeUri: multil_filter/
       Handler: labda_filter.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.9
       Architectures:
         - x86_64
       Events:
@@ -46,7 +46,7 @@ Resources:
     Properties:
       CodeUri: multil_feature/
       Handler: labda_feature.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.9
       Architectures:
         - x86_64
       Events:
@@ -60,7 +60,7 @@ Resources:
     Properties:
       CodeUri: multil_add/
       Handler: labda_add.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.9
       Architectures:
         - x86_64
       Events:
@@ -74,7 +74,7 @@ Resources:
     Properties:
       CodeUri: multil_delete/
       Handler: labda_delete.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.9
       Architectures:
         - x86_64
       Events:

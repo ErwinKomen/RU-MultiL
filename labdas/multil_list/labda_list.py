@@ -74,6 +74,7 @@ def lambda_handler(event, context):
     """Get to the data and return a list of it"""
 
     oErr = ErrHandle()
+    print("Starting in: lambda_handler 2")
     body = dict(status="error", data="empty")
 
     bFindBucket = False
