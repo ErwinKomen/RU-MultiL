@@ -42,11 +42,15 @@
         $('.item').click(function()
         {
             id = $(this).attr('data-id');
-            var item = dataset[id];
+            var item = Object.entries(dataset[id]);
+
+            item = moveItemToPosition('observation', 0, item);
+            item = moveItemToPosition('monolingual_group', 1, item);
+            item = moveItemToPosition('sample', 2, item);
 
             $('#itemEditor').html('<table>');
             
-            $.each(item,function(key,value)
+            for (const [key, value] of item)
             {
                 var row = '<tr><td>' + key + '</td><td>';
 
@@ -84,7 +88,7 @@
                 }
 
                 $('#itemEditor').append(row);
-            });
+            };
 
             $('#itemEditor').append('</table>');
 
@@ -125,6 +129,27 @@
         	$.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 'data':[dataset[id]]}));
         });
     });
+
+function moveItemToPosition(key, newPosition, array)
+{
+    const itemIndex = array.findIndex(([itemKey]) => itemKey === key);
+
+    if (itemIndex === -1) {
+    console.log(`Key '${key}' not found in the array.`);
+    return array;
+    }
+
+    if (newPosition < 0 || newPosition >= array.length) {
+    console.log(`Invalid new position '${newPosition}'.`);
+    return array;
+    }
+
+    const [removedItem] = array.splice(itemIndex, 1);
+    array.splice(newPosition, 0, removedItem);
+
+    return array;
+}
+
 </script>
 
 <style>

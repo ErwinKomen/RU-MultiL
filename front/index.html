@@ -41,7 +41,6 @@ input[type="checkbox"]{
     height: 20px;
 	margin: 15px;
 	position: inherit;
-	filter: invert(100%) hue-rotate(180deg) brightness(1.0);
 	cursor: pointer;
 }
 
@@ -1181,7 +1180,7 @@ function show_plots_table() {
 	$('#forest_plot_extra_fields').empty();
 
 	$('#forest_plot_authors').append('<thead><tr><th>Study</th></tr></thead>');
-	$('#forest_plot_extra_fields').append('<thead><tr><th>Linguistic property</th><th>Linguistic property detailed</th><th>Effect size</th></tr></thead>');
+	$('#forest_plot_extra_fields').append('<thead><tr><th>Target language</th><th>Linguistic property</th><th>Linguistic property detailed</th><th>Effect size</th></tr></thead>');
 
 	var forestPlotData = [];
 	for (key in filtered_observation_ids) 
@@ -1203,7 +1202,7 @@ function show_plots_table() {
 		var ci = this_dataset['g_SE'];
 
 		$('#forest_plot_authors').append('<tr><td>' + this_dataset['short_cite'] + '</td></tr>');
-		$('#forest_plot_extra_fields').append('<tr><td>' + this_dataset['linguistic_property'] + '</td><td>' + this_dataset['linguistic_property_detailed'] + '</td><td>' + effectSize.toFixed(2) + '</td></tr>');
+		$('#forest_plot_extra_fields').append('<tr><td>' + this_dataset['target_language'] + '</td><td>' + this_dataset['linguistic_property'] + '</td><td>' + this_dataset['linguistic_property_detailed'] + '</td><td>' + effectSize.toFixed(2) + '</td></tr>');
 
 		forestPlotData.push({'authors':this_dataset['short_cite'], 'interval':[effectSize-ci,effectSize,effectSize+ci]});
 	}
@@ -1392,6 +1391,8 @@ function formatMonths(numMonths) {
 		<option value="dominance">Dominance</option>
 		<option value="language_home">Language home</option>
 		<option value="societal_language">Societal language</option>
+		<option value="surface_overlap_authors">Surface overlap authors</option>
+		<option value="mean_age_2L1">Mean age 2L1</option>
 	</select>
 </div>
 
@@ -1420,16 +1421,40 @@ function formatMonths(numMonths) {
 <br><br><br>
 
 <div class="card bg-light text-black" id="set_up_plots">
+	<div class="card bg-light text-black" id="set_up_plots">
+		<div class="card-header text-left">
+			<h4 class="card-text">Summary</h4>
+		</div>
+	</div>
+
+	<div class="card-body">
+		<p id="result_size_indicator">0 studies, 0 observations</p>
+			<div id="forest_plots" style="width:80%;padding-left:100px;"></div>
+
+		<div id="statistical_summary">
+			<strong>Meta-analytic effect size</strong> <span id="effect_size"></span><br>
+			<strong>Confidence interval</strong> <span id="confidence_interval"></span>
+		</div>
+
+		<br>
+		
+		<div id="interface_extended_summary" class="wait_until_ready">
+			<button class="btn btn-outline-secondary" type="button" data-toggle="collapse" 
+				data-target="#extended_summary" aria-expanded="false" aria-controls="extended_summary">Extended summary</button>
+			<br><br>
+			<div class="collapse" id="extended_summary"></div>
+		</div>
+		
+	</div>	
+</div>
+<br><br>
+
+<div class="card bg-light text-black" id="set_up_plots">
 <div class="card bg-light text-black" id="set_up_plots">
 <div class="card-header text-left">
 	<h4 class="card-text">Forest plot</h4>
 </div>
 <div class="card-body">
-<br>
-<p id="result_size_indicator">0 studies, 0 observations</p>
-	<div id="forest_plots" style="width:80%;padding-left:100px;">
-<br><br>
-
 <table class="forest_plot" id="forest_plot_authors"></table>
 <canvas class="forest_plot" id="forest_plot"></canvas>
 <table class="forest_plot" id="forest_plot_extra_fields"></table>
@@ -1439,17 +1464,6 @@ function formatMonths(numMonths) {
 </div>
 </div>
 </div>
-</div>
-
-<div id="statistical_summary">
-	<strong>Effect size</strong> <span id="effect_size"></span> <strong>Confidence interval</strong> <span id="confidence_interval"></span>
-</div>
-
-<div id="interface_extended_summary" class="wait_until_ready">
-	<button class="btn btn-outline-secondary" type="button" data-toggle="collapse" 
-		data-target="#extended_summary" aria-expanded="false" aria-controls="extended_summary">Extended summary</button>
-	<br><br>
-	<div class="collapse" id="extended_summary"></div>
 </div>
 
 <br><br>
