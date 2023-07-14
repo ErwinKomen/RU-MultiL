@@ -71,6 +71,11 @@ div.basic_filter
 	font-family: "Cascadia", monospace;
 }
 
+#extended_summary table
+{
+	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";	
+}
+
 </style>
 
 <title>Cross-linguistic influence in simultaneous and early sequential bilingual children</title>
@@ -154,7 +159,9 @@ var choice_features = ['task_type', 'task_detailed', 'linguistic_property',
 						'societal_language','surface_overlap_author','published', 'CLI_predicted', 
 						'predicted_direction_difference_2L1'];
 var exclude_features = ['verified_by_administrators', 'task_detailed_other', 'linguistic_property_other','research_group','sample'];
+
 var surface_overlap_author_choices = ['surface_overlap', 'no_surface_overlap', 'not_discussed', 'unknown'];
+var target_or_child_system_choices = ['target','child','both']
 
 var numerical_features = [];
 
@@ -392,6 +399,7 @@ function add_extended_summary(post_response_parsed, usingPredictor)
 		for (var i = 0; i < all_model_results.length; i++)
 		{
 			var model_results = all_model_results[i];
+			extended_summary.push('');
 			extended_summary = extended_summary.concat(summarize_model_results(model_name,model_results, r, model_index==0));
 		}
 	}
@@ -402,19 +410,19 @@ function add_extended_summary(post_response_parsed, usingPredictor)
 
 function summarize_model_results(model_name, model_results, r, includeDFAndCI)
 {
-	var summary = ['',
-					model_name,
-					'Coef '+model_results['Coef'],
-					'Estimate (r = '+r+') '+model_results['beta'],
-					'SE (r = '+r+') '+model_results['SE']];
+	var summary = '<table><tr><td>'+model_name+'</td><td></td>';
+	summary += '<tr><th>Coef</th><td>'+model_results['Coef']+'</td></tr>';
+	summary += '<tr><th>Estimate (r = '+r+')</th><td>'+model_results['beta']+'</td></tr>';
+	summary += '<tr><th>SE (r = '+r+')</th><td>'+model_results['SE']+'</td></tr>';
 
 	if (includeDFAndCI)
 	{
-		summary.push('d.f. '+model_results['df']);
-		summary.push('Lower 95% CI '+model_results['CI_L']);
-		summary.push('Upper 95% CI '+model_results['CI_U']);
+		summary += '<tr><th>d.f.</th><td>'+model_results['df']+'</td></tr>';
+		summary += '<tr><th>Lower 95% CI</th><td>'+model_results['CI_L']+'</td></tr>';
+		summary += '<tr><th>Upper 95% CI</th><td>'+model_results['CI_U']+'</td></tr>';
 	}
 
+	summary += '</table>';
 	return summary;
 }
 
@@ -588,17 +596,36 @@ var trial_ids = [];
 var next_new_observation_id = 0;
 
 function fill_rows(dataset, dataset_fields) {
+
 	var header = [];
 	for (j=0; j< dataset_fields.length; j++) {
 		var this_field = dataset_fields[j];
 		header.push(this_field);
 	};
 	rows.push(header);
+
+	dataset.sort(function(a, b) 
+	{
+		return a['observation'] - b['observation'];
+	});
+
 	for (j=0; j < dataset.length; j++) {
 		var this_dataset = dataset[j];
 		var this_row = [];
-		for (key in this_dataset) {
-			var this_value = this_dataset[key];
+
+		for (key of dataset_fields) 
+		{
+			var this_value;
+			
+			if (key == 'in_paper')
+			{
+				this_value = this_dataset['observation'] <= 198 ? 'yes' : 'no';
+			}
+			else
+			{
+				this_value = this_dataset[key];
+			}
+			
 			this_row.push(this_value);
 		};
 		rows.push(this_row);
@@ -822,9 +849,16 @@ $(document).ready(function() {
 		
 		chosen_fields = dataset_fields;
 		
-		fill_rows(dataset, dataset_fields);
-		
+		var export_fields = ['observation','research_group','short_cite','published','data_collection','task_number',
+			'target_language','other_language','task_type','task_detailed','linguistic_property',
+			'linguistic_property_detailed','bilingual_group','monolingual_group','sample','surface_overlap_author',
+			'target_or_child_system','dominance','language_home','societal_language','CLI_predicted',
+			'predicted_direction_difference_2L1','mean_age_2L1','sd_age_2L1','age_min_2L1','age_max_2L1',
+			'mean_age_L1','sd_age_L1','age_min_L1','age_max_L1','n_2L1','n_L1','mean_2L1','mean_L1','SD_2L1',
+			'SD_L1','mean_difference','d','g','g_correct_sign','g_var','g_SE','g_W','num_trials',
+			'verified_by_administrators','task_detailed_other','in_paper'];
 
+		fill_rows(dataset, export_fields);	
 		
 		var observations_table = '#observations_table';
 		
@@ -1107,6 +1141,10 @@ $(document).ready(function() {
 		{
 			return surface_overlap_author_choices;
 		}
+		else if (feature == 'target_or_child_system')
+		{
+			return target_or_child_system_choices;
+		}
 
 		var choices = dataset.map(d => d[feature]);
 		return choices
@@ -1281,6 +1319,8 @@ function exportToCsv(filename, rows, headers = false) {
                 });
                 finalVal += '\n';
             }
+			
+			console.log(row, j);
             var innerValue = row[j] === null ? '' : row[j].toString();
             if (row[j] instanceof Date) {
                 innerValue = row[j].toLocaleString();
