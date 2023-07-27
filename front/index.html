@@ -300,16 +300,27 @@ function get_forest_data(filtered)
 	}
 
      // First clean up the dataset to something where there are no "MD" in SD_L1
-     for (i = 0; i < forest_data.length; i++) {
-         var item = forest_data[i];
-         if (item['SD_L1'] !== "MD" && item['SD_L1'] !== "NA") {
-            // We may copy it
-            dsetclean.push(item);
-            cleaned_observations.push(item.observation);
-         } else {
+	for (i = 0; i < forest_data.length; i++) 
+	{
+        var item = forest_data[i];
+		var in_paper = item['observation'] <= 198;
+		var verified = item['verified_by_administrators'];
+
+		if (!in_paper && !verified)
+		{
+			continue;
+		}
+
+        if (item['SD_L1'] === "MD" || item['SD_L1'] === "NA") 
+		{
             bad_observations.push(item.observation);
-         }
-     }
+			continue;
+        }
+
+		// We may copy it
+		dsetclean.push(item);
+		cleaned_observations.push(item.observation);
+    }
 
      // UNCLEAN: data = { calling: "usedatafilter", dataset: dataset };
      // Using CLEANED data
@@ -673,9 +684,6 @@ function save_new_observation(clear_mean_and_stdev_only) {
 		//alert("SAVE:\n"+set_fields);
 	}
 
-	console.log(new_fields_dict);
-
-
 	var data = {}
 
 	var text_fields = ["research_group", "short_cite", "published", "data_collection", "target_language", "other_language", "task_type", "task_detailed", "linguistic_property", "linguistic_property_detailed", "bilingual_group", "monolingual_group", "surface_overlap_author", "target_or_child_system", "dominance", "language_home", "societal_language", "CLI_predicted", "predicted_direction_difference_2L1", "email_address", "verified_by_administrators", "task_detailed_other", "linguistic_property_other", "sd_age_2L1", "sd_age_L1"]
@@ -816,20 +824,61 @@ function all_obligatory_fields_filled()
 	return true;
 }
 
+function unique_together_fields_are_unique_together()
+{
+	var uniqueTogetherFields = ['linguistic_property_detailed', 'task_detailed', 'target_language', 'bilingual_group', 'monolingual_group'];
+
+	var takenCombinations = [];
+	var currentCombination = '';
+
+	for (j=0; j < dataset.length; j++) 
+	{
+		var this_dataset = dataset[j];
+
+		for (var fieldIndex=0; fieldIndex < uniqueTogetherFields.length; fieldIndex++) 
+		{
+			var thisField = uniqueTogetherFields[fieldIndex];
+			var thisValue = this_dataset[thisField];
+
+			currentCombination += thisValue + ',';
+		}
+
+		if (takenCombinations.includes(currentCombination))
+		{
+			return false;
+		}
+
+		takenCombinations.push(currentCombination);
+		currentCombination = '';
+	}
+
+	for (fieldIndex=0; fieldIndex < uniqueTogetherFields.length; fieldIndex++) 
+	{
+		currentCombination += document.getElementById('name_'+uniqueTogetherFields[fieldIndex]).value + ',';
+	}
+
+	return !takenCombinations.includes(currentCombination);
+}
+
 function update_save_button_status()
 {
-	if (all_obligatory_fields_filled())
-	{
-		$('button.save_button').removeClass('disabled');
-		$('p.obligatory_explanation').hide();
-		return;
-	}
-	else
+	if (!unique_together_fields_are_unique_together())
 	{
 		$('button.save_button').addClass('disabled');
 		$('p.obligatory_explanation').show();
+		$('p.obligatory_explanation').html('This combination of linguistic property, task, target language, bilingual group and monolingual group already exists.');
 		return;
 	}
+	else if (!all_obligatory_fields_filled())
+	{
+		$('button.save_button').addClass('disabled');
+		$('p.obligatory_explanation').show();
+		$('p.obligatory_explanation').html('Please fill out all fields. Some fields will be calculated automatically. Note: num_trials can be left open if not applicable. See the manual for more specific instructions on how to fill out each field.'); 
+		return;
+	}
+
+	$('button.save_button').removeClass('disabled');
+	$('p.obligatory_explanation').hide();
 }
 
 $(document).ready(function() {
@@ -858,6 +907,7 @@ $(document).ready(function() {
 			'SD_L1','mean_difference','d','g','g_correct_sign','g_var','g_SE','g_W','num_trials',
 			'verified_by_administrators','task_detailed_other','in_paper'];
 
+		console.log(dataset)
 		fill_rows(dataset, export_fields);	
 		
 		var observations_table = '#observations_table';
@@ -1523,7 +1573,7 @@ function formatMonths(numMonths) {
 		<form id="enter_observations" name="enter_observations">
 		<button class="save_button" type="button" onclick="save_new_observation(false)">Save and clear</button>
 		<button class="save_button" type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
-		<p class="obligatory_explanation">Please fill out all fields. Some fields will be calculated automatically. Note: num_trials can be left open if not applicable. See the manual for more specific instructions on how to fill out each field.</p>
+		<p class="obligatory_explanation"></p>
 		<br><br>
 		<table id="field_list" class="table table-condensed table-hover">
 		<thead id = "field_list_header">
@@ -1538,7 +1588,7 @@ function formatMonths(numMonths) {
 		</table>
 		<button class="save_button" type="button" onclick="save_new_observation(false)">Save and clear</button>
 		<button class="save_button" type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
-		<p class="obligatory_explanation">Please fill out all fields. Some fields will be calculated automatically. Note: num_trials can be left open if not applicable. See the manual for more specific instructions on how to fill out each field.</p>
+		<p class="obligatory_explanation"></p>
 
 		</form>
 	</div>

@@ -94,7 +94,7 @@
 
         });
 
-        $('button').click(function()
+        $('button.save').click(function()
         {
             $('input').each(function()
             {
@@ -127,6 +127,13 @@
             aws_url = 'https://rkxy8021l6.execute-api.eu-central-1.amazonaws.com/Prod/add';
             console.log(dataset[id]);
         	$.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 'data':[dataset[id]]}));
+        });
+
+        $('button.delete').click(function()
+        {
+            aws_url = 'https://rkxy8021l6.execute-api.eu-central-1.amazonaws.com/Prod/delete';
+            $.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 
+                                            'observations':[parseInt(dataset[id]['observation'])]}));
         });
     });
 
@@ -170,5 +177,6 @@ function moveItemToPosition(key, newPosition, array)
 
     <div id="itemEditor"></div>
 
-    <button>Save</button>
+    <button class="save">Save</button>
+    <button class="delete">Delete</button>
 </body>
