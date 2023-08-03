@@ -49,9 +49,9 @@ input[type="checkbox"]{
 	float: left;
 }
 
-td
+th, td
 {
-	padding-left: 5px;
+	padding-left: 15px;
 }
 
 button.disabled
@@ -106,6 +106,7 @@ var explanationPerFeature = {
 	'other_language' : 'other language of bilingual children',
 	'task_type' : 'type of task',
 	'task_detailed' : 'type of task in more detail',
+	'task_detailed_other': 'if you selected "other" for task_detail above, please specify',
 	'linguistic_property' : 'type of linguistic property studied',
 	'linguistic_property_detailed': 'additional information about linguistic property', 
 									//if necessary to distinguish from other linguistic properties studied within the same study',
@@ -158,7 +159,7 @@ var choice_features = ['task_type', 'task_detailed', 'linguistic_property',
 						'target_or_child_system', 'dominance', 'language_home',
 						'societal_language','surface_overlap_author','published', 'CLI_predicted', 
 						'predicted_direction_difference_2L1'];
-var exclude_features = ['verified_by_administrators', 'task_detailed_other', 'linguistic_property_other','research_group','sample'];
+var exclude_features = ['verified_by_administrators','linguistic_property_other','research_group','sample'];
 
 var surface_overlap_author_choices = ['surface_overlap', 'no_surface_overlap', 'not_discussed', 'unknown'];
 var target_or_child_system_choices = ['target','child','both']
@@ -407,12 +408,8 @@ function add_extended_summary(post_response_parsed, usingPredictor)
 		var r = r_to_use[model_index];
 		var all_model_results = post_response_parsed['extended'][model_name];
 
-		for (var i = 0; i < all_model_results.length; i++)
-		{
-			var model_results = all_model_results[i];
-			extended_summary.push('');
-			extended_summary = extended_summary.concat(summarize_model_results(model_name,model_results, r, model_index==0));
-		}
+		extended_summary = extended_summary.concat(summarize_model_results(model_name,all_model_results, r, model_index==0));
+		extended_summary.push('');
 	}
 
 	extended_summary.push('Note that analyses with a predictor are based on positive effect sizes only (see van Dijk et al., 2021)');
@@ -421,20 +418,56 @@ function add_extended_summary(post_response_parsed, usingPredictor)
 
 function summarize_model_results(model_name, model_results, r, includeDFAndCI)
 {
-	var summary = '<table><tr><td>'+model_name+'</td><td></td>';
-	summary += '<tr><th>Coef</th><td>'+model_results['Coef']+'</td></tr>';
-	summary += '<tr><th>Estimate (r = '+r+')</th><td>'+model_results['beta']+'</td></tr>';
-	summary += '<tr><th>SE (r = '+r+')</th><td>'+model_results['SE']+'</td></tr>';
+	var flippedRowsAndColumns = true;
 
-	if (includeDFAndCI)
+	if (flippedRowsAndColumns)
 	{
-		summary += '<tr><th>d.f.</th><td>'+model_results['df']+'</td></tr>';
-		summary += '<tr><th>Lower 95% CI</th><td>'+model_results['CI_L']+'</td></tr>';
-		summary += '<tr><th>Upper 95% CI</th><td>'+model_results['CI_U']+'</td></tr>';
-	}
+		var summary = '<p>'+model_name+'</p><table><tr><th>Coef</th><th>Estimate (r = '+r+')</th><th>SE (r = '+r+')</th>';
 
-	summary += '</table>';
-	return summary;
+		if (includeDFAndCI)
+		{
+			summary += '<th>d.f.</th><th>Lower 95% CI</th><th>Upper 95% CI</th></tr>';
+		}
+		else
+		{
+			summary += '</tr>';
+		}
+
+		for (var i = 0; i < model_results.length; i++)
+		{
+			var model_result = model_results[i];
+			summary += '<tr><td>'+model_result['Coef']+'</td><td>'+model_result['beta'].toFixed(2)+'</td><td>'+model_result['SE'].toFixed(2)+'</td>';
+
+			if (includeDFAndCI)
+			{
+				summary += '<td>'+model_result['df'].toFixed(2)+'</td><td>'+model_result['CI_L'].toFixed(2)+'</td><td>'+model_result['CI_U'].toFixed(2)+'</td></tr>';
+			}
+			else
+			{
+				summary += '</tr>';
+			}
+		}
+
+		summary += '</table>';
+		return summary;
+	}
+	else
+	{
+		var summary = '<table><tr><td>'+model_name+'</td><td></td>';
+		summary += '<tr><th>Coef</th><td>'+model_results['Coef']+'</td></tr>';
+		summary += '<tr><th>Estimate (r = '+r+')</th><td>'+model_results['beta']+'</td></tr>';
+		summary += '<tr><th>SE (r = '+r+')</th><td>'+model_results['SE']+'</td></tr>';
+
+		if (includeDFAndCI)
+		{
+			summary += '<tr><th>d.f.</th><td>'+model_results['df']+'</td></tr>';
+			summary += '<tr><th>Lower 95% CI</th><td>'+model_results['CI_L']+'</td></tr>';
+			summary += '<tr><th>Upper 95% CI</th><td>'+model_results['CI_U']+'</td></tr>';
+		}
+
+		summary += '</table>';
+		return summary;
+	}
 }
 
 var forest_plot_data_list = [];
