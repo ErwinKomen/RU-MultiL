@@ -16,7 +16,7 @@
                                                     'that_trace','genericity_specificity', 'scrambled_indefinites',
                                                     'null_overt_object', 'posessor_order', 'modified_noun', 'adverb_order',
                                                     'pseudo_stripping', 'wh_order', 'quantifier'],
-                            'target_or_child_system': ['target','child','NA','?'],
+                            'target_or_child_system': ['target','child','both','?'],
                             'dominance': ['other_language', 'target_language', 'balanced', 'mixed', '?'],
                             'language_home': ['both', 'mixed', 'target_language', 'other_language','?'],
                             'societal_language': ['both', 'mixed', 'target_language', 'other_language'],
@@ -42,11 +42,15 @@
         $('.item').click(function()
         {
             id = $(this).attr('data-id');
-            var item = dataset[id];
+            var item = Object.entries(dataset[id]);
+
+            item = moveItemToPosition('observation', 0, item);
+            item = moveItemToPosition('monolingual_group', 1, item);
+            item = moveItemToPosition('sample', 2, item);
 
             $('#itemEditor').html('<table>');
             
-            $.each(item,function(key,value)
+            for (const [key, value] of item)
             {
                 var row = '<tr><td>' + key + '</td><td>';
 
@@ -84,13 +88,13 @@
                 }
 
                 $('#itemEditor').append(row);
-            });
+            };
 
             $('#itemEditor').append('</table>');
 
         });
 
-        $('button').click(function()
+        $('button.save').click(function()
         {
             $('input').each(function()
             {
@@ -124,7 +128,35 @@
             console.log(dataset[id]);
         	$.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 'data':[dataset[id]]}));
         });
+
+        $('button.delete').click(function()
+        {
+            aws_url = 'https://rkxy8021l6.execute-api.eu-central-1.amazonaws.com/Prod/delete';
+            $.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 
+                                            'observations':[parseInt(dataset[id]['observation'])]}));
+        });
     });
+
+function moveItemToPosition(key, newPosition, array)
+{
+    const itemIndex = array.findIndex(([itemKey]) => itemKey === key);
+
+    if (itemIndex === -1) {
+    console.log(`Key '${key}' not found in the array.`);
+    return array;
+    }
+
+    if (newPosition < 0 || newPosition >= array.length) {
+    console.log(`Invalid new position '${newPosition}'.`);
+    return array;
+    }
+
+    const [removedItem] = array.splice(itemIndex, 1);
+    array.splice(newPosition, 0, removedItem);
+
+    return array;
+}
+
 </script>
 
 <style>
@@ -145,5 +177,6 @@
 
     <div id="itemEditor"></div>
 
-    <button>Save</button>
+    <button class="save">Save</button>
+    <button class="delete">Delete</button>
 </body>

@@ -41,7 +41,6 @@ input[type="checkbox"]{
     height: 20px;
 	margin: 15px;
 	position: inherit;
-	filter: invert(100%) hue-rotate(180deg) brightness(1.0);
 	cursor: pointer;
 }
 
@@ -50,9 +49,9 @@ input[type="checkbox"]{
 	float: left;
 }
 
-td
+th, td
 {
-	padding-left: 5px;
+	padding-left: 15px;
 }
 
 button.disabled
@@ -70,6 +69,11 @@ div.basic_filter
 #extended_summary
 {
 	font-family: "Cascadia", monospace;
+}
+
+#extended_summary table
+{
+	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";	
 }
 
 </style>
@@ -102,6 +106,7 @@ var explanationPerFeature = {
 	'other_language' : 'other language of bilingual children',
 	'task_type' : 'type of task',
 	'task_detailed' : 'type of task in more detail',
+	'task_detailed_other': 'if you selected "other" for task_detail above, please specify',
 	'linguistic_property' : 'type of linguistic property studied',
 	'linguistic_property_detailed': 'additional information about linguistic property', 
 									//if necessary to distinguish from other linguistic properties studied within the same study',
@@ -154,8 +159,10 @@ var choice_features = ['task_type', 'task_detailed', 'linguistic_property',
 						'target_or_child_system', 'dominance', 'language_home',
 						'societal_language','surface_overlap_author','published', 'CLI_predicted', 
 						'predicted_direction_difference_2L1'];
-var exclude_features = ['verified_by_administrators', 'task_detailed_other', 'linguistic_property_other','research_group','sample'];
+var exclude_features = ['verified_by_administrators','linguistic_property_other','research_group','sample'];
+
 var surface_overlap_author_choices = ['surface_overlap', 'no_surface_overlap', 'not_discussed', 'unknown'];
+var target_or_child_system_choices = ['target','child','both']
 
 var numerical_features = [];
 
@@ -294,28 +301,40 @@ function get_forest_data(filtered)
 	}
 
      // First clean up the dataset to something where there are no "MD" in SD_L1
-     for (i = 0; i < forest_data.length; i++) {
-         var item = forest_data[i];
-         if (item['SD_L1'] !== "MD" && item['SD_L1'] !== "NA") {
-            // We may copy it
-            dsetclean.push(item);
-            cleaned_observations.push(item.observation);
-         } else {
+	for (i = 0; i < forest_data.length; i++) 
+	{
+        var item = forest_data[i];
+		var in_paper = item['observation'] <= 198;
+		var verified = item['verified_by_administrators'];
+
+		if (!in_paper && !verified)
+		{
+			continue;
+		}
+
+        if (item['SD_L1'] === "MD" || item['SD_L1'] === "NA") 
+		{
             bad_observations.push(item.observation);
-         }
-     }
+			continue;
+        }
+
+		// We may copy it
+		dsetclean.push(item);
+		cleaned_observations.push(item.observation);
+    }
 
      // UNCLEAN: data = { calling: "usedatafilter", dataset: dataset };
      // Using CLEANED data
      // data = { calling: "usedatafilter", dataset: dsetclean };
      data = { dataset: dsetclean};
 
+	 var usingPredictor = false;
 	 var predictor = $('#predictor').val();
 
 	 if (predictor != "None")
 	 {
 		 data['predictor'] = predictor;
-		 data['filter_var'] = 'task_type';
+		 usingPredictor = true;
 	 }
 
      // Make sure to STRINGIFY the data, so that it is in the body
@@ -345,51 +364,110 @@ function get_forest_data(filtered)
 				start_application(observation_keys);
 			}
 
-			add_extended_summary(post_response_parsed);
+			add_extended_summary(post_response_parsed, usingPredictor);
          }
 	 })
 };
 
-function add_extended_summary(post_response_parsed)
+function add_extended_summary(post_response_parsed, usingPredictor)
 {
-	$('#effect_size').html(post_response_parsed['short']['effect_size']);
-	$('#confidence_interval').html(post_response_parsed['short']['conf_lbound'] + ' - ' + post_response_parsed['short']['conf_ubound']);
-	$("extended_summary").html("");
+	if (!usingPredictor)
+	{
+		$('#effect_size').html(post_response_parsed['short']['effect_size']);
+		$('#confidence_interval').html(post_response_parsed['short']['conf_lbound'] + ' - ' + post_response_parsed['short']['conf_ubound']);
+	}
+	else
+	{
+		$('#effect_size').html("");
+		$('#confidence_interval').html("");
+	}
+
+	var extended_summary = [];
 
 	const use_nr_of_summary_lines = 19;
 	for (var i = 0; i < use_nr_of_summary_lines && i < post_response_parsed['extended']['summary'].length; i++) 
 	{
-		var summary_line = post_response_parsed['extended']['summary'][i];
-		$('#extended_summary').append(summary_line + '<br>');
+		extended_summary.push(post_response_parsed['extended']['summary'][i]);
 	}
 
-	var model1a = post_response_parsed['extended']['model1a'][0];
-	var model1b = post_response_parsed['extended']['model1b'][0];
-	var model1c = post_response_parsed['extended']['model1c'][0];
+	var models_to_use;
+	var r_to_use = [0.6, 0, 0.95];
 
-	var extra_lines = ['<br>',
-						'Model1a<br>',
-						'Coef '+model1a['Coef']+'<br>',
-						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
-						'SE (r = 0.60) '+model1a['SE']+'<br>',
-						'd.f. '+model1a['df']+'<br>',
-						'Lower 95% CI '+model1a['CI_L']+'<br>',
-						'Upper 95% CI '+model1a['CI_U']+'<br>',
-						'<br>',
-						'Model1b<br>',
-						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
-						'SE (r = 0.60) '+model1a['SE']+'<br>',
-						'<br>',
-						'Model1c<br>',
-						'Estimate (r = 0.60) '+model1a['beta']+'<br>',
-						'SE (r = 0.60) '+model1a['SE']+'<br>',
-						'Note that analyses with a predictor are based on positive effect sizes only (see van Dijk et al., 2021)'
-					]
-
-	for (var i = 0; i < extra_lines.length; i++)
+	if (usingPredictor)
 	{
-		$('#extended_summary').append(extra_lines[i]);
-	}	
+		models_to_use = ['model2a', 'model2b', 'model12c'];
+	}
+	else
+	{
+		models_to_use = ['model1a', 'model1b', 'model1c'];
+	}
+
+	for (var model_index = 0; model_index < models_to_use.length; model_index++)
+	{
+		var model_name = models_to_use[model_index];
+		var r = r_to_use[model_index];
+		var all_model_results = post_response_parsed['extended'][model_name];
+
+		extended_summary = extended_summary.concat(summarize_model_results(model_name,all_model_results, r, model_index==0));
+		extended_summary.push('');
+	}
+
+	extended_summary.push('Note that analyses with a predictor are based on positive effect sizes only (see van Dijk et al., 2021)');
+	$('#extended_summary').html(extended_summary.join('<br>'));
+}
+
+function summarize_model_results(model_name, model_results, r, includeDFAndCI)
+{
+	var flippedRowsAndColumns = true;
+
+	if (flippedRowsAndColumns)
+	{
+		var summary = '<p>'+model_name+'</p><table><tr><th>Coef</th><th>Estimate (r = '+r+')</th><th>SE (r = '+r+')</th>';
+
+		if (includeDFAndCI)
+		{
+			summary += '<th>d.f.</th><th>Lower 95% CI</th><th>Upper 95% CI</th></tr>';
+		}
+		else
+		{
+			summary += '</tr>';
+		}
+
+		for (var i = 0; i < model_results.length; i++)
+		{
+			var model_result = model_results[i];
+			summary += '<tr><td>'+model_result['Coef']+'</td><td>'+model_result['beta'].toFixed(2)+'</td><td>'+model_result['SE'].toFixed(2)+'</td>';
+
+			if (includeDFAndCI)
+			{
+				summary += '<td>'+model_result['df'].toFixed(2)+'</td><td>'+model_result['CI_L'].toFixed(2)+'</td><td>'+model_result['CI_U'].toFixed(2)+'</td></tr>';
+			}
+			else
+			{
+				summary += '</tr>';
+			}
+		}
+
+		summary += '</table>';
+		return summary;
+	}
+	else
+	{
+		var summary = '<table><tr><td>'+model_name+'</td><td></td>';
+		summary += '<tr><th>Coef</th><td>'+model_results['Coef']+'</td></tr>';
+		summary += '<tr><th>Estimate (r = '+r+')</th><td>'+model_results['beta']+'</td></tr>';
+		summary += '<tr><th>SE (r = '+r+')</th><td>'+model_results['SE']+'</td></tr>';
+
+		if (includeDFAndCI)
+		{
+			summary += '<tr><th>d.f.</th><td>'+model_results['df']+'</td></tr>';
+			summary += '<tr><th>Lower 95% CI</th><td>'+model_results['CI_L']+'</td></tr>';
+			summary += '<tr><th>Upper 95% CI</th><td>'+model_results['CI_U']+'</td></tr>';
+		}
+
+		summary += '</table>';
+		return summary;
+	}
 }
 
 var forest_plot_data_list = [];
@@ -559,19 +637,39 @@ var forest_plot_data_map = {};
 var forest_plot_table_fields = ['short_cite', 'linguistic_property', 'linguistic_property_detailed','plot', 'effectSize'];
 var forest_plot_table_headers = ['author(s) and year', 'linguistic property', '', '', 'effect size'];
 var trial_ids = [];
+var next_new_observation_id = 0;
 
 function fill_rows(dataset, dataset_fields) {
+
 	var header = [];
 	for (j=0; j< dataset_fields.length; j++) {
 		var this_field = dataset_fields[j];
 		header.push(this_field);
 	};
 	rows.push(header);
+
+	dataset.sort(function(a, b) 
+	{
+		return a['observation'] - b['observation'];
+	});
+
 	for (j=0; j < dataset.length; j++) {
 		var this_dataset = dataset[j];
 		var this_row = [];
-		for (key in this_dataset) {
-			var this_value = this_dataset[key];
+
+		for (key of dataset_fields) 
+		{
+			var this_value;
+			
+			if (key == 'in_paper')
+			{
+				this_value = this_dataset['observation'] <= 198 ? 'yes' : 'no';
+			}
+			else
+			{
+				this_value = this_dataset[key];
+			}
+			
 			this_row.push(this_value);
 		};
 		rows.push(this_row);
@@ -619,9 +717,6 @@ function save_new_observation(clear_mean_and_stdev_only) {
 		//alert("SAVE:\n"+set_fields);
 	}
 
-	console.log(new_fields_dict);
-
-
 	var data = {}
 
 	var text_fields = ["research_group", "short_cite", "published", "data_collection", "target_language", "other_language", "task_type", "task_detailed", "linguistic_property", "linguistic_property_detailed", "bilingual_group", "monolingual_group", "surface_overlap_author", "target_or_child_system", "dominance", "language_home", "societal_language", "CLI_predicted", "predicted_direction_difference_2L1", "email_address", "verified_by_administrators", "task_detailed_other", "linguistic_property_other", "sd_age_2L1", "sd_age_L1"]
@@ -655,9 +750,19 @@ function save_new_observation(clear_mean_and_stdev_only) {
 		}
 	}
 
+	data['research_group'] = 'to be filled by admins';
 	data['verified_by_administrators'] = false;
 	console.log(Math.max(observation_keys));
-	data['observation'] = Math.max(...observation_keys)+1; //Here a new ID is chosen
+
+	if (next_new_observation_id == 0)
+	{
+		data['observation'] = Math.max(...observation_keys)+1; //Here a new ID is chosen
+	}
+	else
+	{
+		data['observation'] = next_new_observation_id;
+	}
+	next_new_observation_id = data['observation']+1;
 
 	aws_url = 'https://rkxy8021l6.execute-api.eu-central-1.amazonaws.com/Prod/add';
 	$.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 'data':[data]}));
@@ -726,10 +831,10 @@ function create_entry_form() {
 
 function all_obligatory_fields_filled()
 {
-	var obligatoryFields = ['research_group','short_cite','published','data_collection',
+	var obligatoryFields = ['short_cite','published','data_collection',
 						'task_number','target_language','other_language','task_type',
 						'task_detailed','linguistic_property','linguistic_property_detailed',
-						'bilingual_group','monolingual_group','sample','surface_overlap_author',
+						'bilingual_group','monolingual_group','surface_overlap_author',
 						'target_or_child_system','dominance','language_home',
 						'societal_language','CLI_predicted',
 						'predicted_direction_difference_2L1','mean_age_2L1','sd_age_2L1',
@@ -752,20 +857,61 @@ function all_obligatory_fields_filled()
 	return true;
 }
 
+function unique_together_fields_are_unique_together()
+{
+	var uniqueTogetherFields = ['linguistic_property_detailed', 'task_detailed', 'target_language', 'bilingual_group', 'monolingual_group'];
+
+	var takenCombinations = [];
+	var currentCombination = '';
+
+	for (j=0; j < dataset.length; j++) 
+	{
+		var this_dataset = dataset[j];
+
+		for (var fieldIndex=0; fieldIndex < uniqueTogetherFields.length; fieldIndex++) 
+		{
+			var thisField = uniqueTogetherFields[fieldIndex];
+			var thisValue = this_dataset[thisField];
+
+			currentCombination += thisValue + ',';
+		}
+
+		if (takenCombinations.includes(currentCombination))
+		{
+			return false;
+		}
+
+		takenCombinations.push(currentCombination);
+		currentCombination = '';
+	}
+
+	for (fieldIndex=0; fieldIndex < uniqueTogetherFields.length; fieldIndex++) 
+	{
+		currentCombination += document.getElementById('name_'+uniqueTogetherFields[fieldIndex]).value + ',';
+	}
+
+	return !takenCombinations.includes(currentCombination);
+}
+
 function update_save_button_status()
 {
-	if (all_obligatory_fields_filled())
-	{
-		$('button.save_button').removeClass('disabled');
-		$('p.obligatory_explanation').hide();
-		return;
-	}
-	else
+	if (!unique_together_fields_are_unique_together())
 	{
 		$('button.save_button').addClass('disabled');
 		$('p.obligatory_explanation').show();
+		$('p.obligatory_explanation').html('This combination of linguistic property, task, target language, bilingual group and monolingual group already exists.');
 		return;
 	}
+	else if (!all_obligatory_fields_filled())
+	{
+		$('button.save_button').addClass('disabled');
+		$('p.obligatory_explanation').show();
+		$('p.obligatory_explanation').html('Please fill out all fields. Some fields will be calculated automatically. Note: num_trials can be left open if not applicable. See the manual for more specific instructions on how to fill out each field.'); 
+		return;
+	}
+
+	$('button.save_button').removeClass('disabled');
+	$('p.obligatory_explanation').hide();
 }
 
 $(document).ready(function() {
@@ -785,9 +931,17 @@ $(document).ready(function() {
 		
 		chosen_fields = dataset_fields;
 		
-		fill_rows(dataset, dataset_fields);
-		
+		var export_fields = ['observation','research_group','short_cite','published','data_collection','task_number',
+			'target_language','other_language','task_type','task_detailed','linguistic_property',
+			'linguistic_property_detailed','bilingual_group','monolingual_group','sample','surface_overlap_author',
+			'target_or_child_system','dominance','language_home','societal_language','CLI_predicted',
+			'predicted_direction_difference_2L1','mean_age_2L1','sd_age_2L1','age_min_2L1','age_max_2L1',
+			'mean_age_L1','sd_age_L1','age_min_L1','age_max_L1','n_2L1','n_L1','mean_2L1','mean_L1','SD_2L1',
+			'SD_L1','mean_difference','d','g','g_correct_sign','g_var','g_SE','g_W','num_trials',
+			'verified_by_administrators','task_detailed_other','in_paper'];
 
+		console.log(dataset)
+		fill_rows(dataset, export_fields);	
 		
 		var observations_table = '#observations_table';
 		
@@ -1070,6 +1224,10 @@ $(document).ready(function() {
 		{
 			return surface_overlap_author_choices;
 		}
+		else if (feature == 'target_or_child_system')
+		{
+			return target_or_child_system_choices;
+		}
 
 		var choices = dataset.map(d => d[feature]);
 		return choices
@@ -1143,7 +1301,7 @@ function show_plots_table() {
 	$('#forest_plot_extra_fields').empty();
 
 	$('#forest_plot_authors').append('<thead><tr><th>Study</th></tr></thead>');
-	$('#forest_plot_extra_fields').append('<thead><tr><th>Linguistic property</th><th>Linguistic property detailed</th><th>Effect size</th></tr></thead>');
+	$('#forest_plot_extra_fields').append('<thead><tr><th>Target language</th><th>Linguistic property</th><th>Linguistic property detailed</th><th>Effect size</th></tr></thead>');
 
 	var forestPlotData = [];
 	for (key in filtered_observation_ids) 
@@ -1165,7 +1323,7 @@ function show_plots_table() {
 		var ci = this_dataset['g_SE'];
 
 		$('#forest_plot_authors').append('<tr><td>' + this_dataset['short_cite'] + '</td></tr>');
-		$('#forest_plot_extra_fields').append('<tr><td>' + this_dataset['linguistic_property'] + '</td><td>' + this_dataset['linguistic_property_detailed'] + '</td><td>' + effectSize.toFixed(2) + '</td></tr>');
+		$('#forest_plot_extra_fields').append('<tr><td>' + this_dataset['target_language'] + '</td><td>' + this_dataset['linguistic_property'] + '</td><td>' + this_dataset['linguistic_property_detailed'] + '</td><td>' + effectSize.toFixed(2) + '</td></tr>');
 
 		forestPlotData.push({'authors':this_dataset['short_cite'], 'interval':[effectSize-ci,effectSize,effectSize+ci]});
 	}
@@ -1244,6 +1402,8 @@ function exportToCsv(filename, rows, headers = false) {
                 });
                 finalVal += '\n';
             }
+			
+			console.log(row, j);
             var innerValue = row[j] === null ? '' : row[j].toString();
             if (row[j] instanceof Date) {
                 innerValue = row[j].toLocaleString();
@@ -1354,6 +1514,8 @@ function formatMonths(numMonths) {
 		<option value="dominance">Dominance</option>
 		<option value="language_home">Language home</option>
 		<option value="societal_language">Societal language</option>
+		<option value="surface_overlap_authors">Surface overlap authors</option>
+		<option value="mean_age_2L1">Mean age 2L1</option>
 	</select>
 </div>
 
@@ -1382,16 +1544,40 @@ function formatMonths(numMonths) {
 <br><br><br>
 
 <div class="card bg-light text-black" id="set_up_plots">
+	<div class="card bg-light text-black" id="set_up_plots">
+		<div class="card-header text-left">
+			<h4 class="card-text">Summary</h4>
+		</div>
+	</div>
+
+	<div class="card-body">
+		<p id="result_size_indicator">0 studies, 0 observations</p>
+			<div id="forest_plots" style="width:80%;padding-left:100px;"></div>
+
+		<div id="statistical_summary">
+			<strong>Meta-analytic effect size</strong> <span id="effect_size"></span><br>
+			<strong>Confidence interval</strong> <span id="confidence_interval"></span>
+		</div>
+
+		<br>
+		
+		<div id="interface_extended_summary" class="wait_until_ready">
+			<button class="btn btn-outline-secondary" type="button" data-toggle="collapse" 
+				data-target="#extended_summary" aria-expanded="false" aria-controls="extended_summary">Extended summary</button>
+			<br><br>
+			<div class="collapse" id="extended_summary"></div>
+		</div>
+		
+	</div>	
+</div>
+<br><br>
+
+<div class="card bg-light text-black" id="set_up_plots">
 <div class="card bg-light text-black" id="set_up_plots">
 <div class="card-header text-left">
 	<h4 class="card-text">Forest plot</h4>
 </div>
 <div class="card-body">
-<br>
-<p id="result_size_indicator">0 studies, 0 observations</p>
-	<div id="forest_plots" style="width:80%;padding-left:100px;">
-<br><br>
-
 <table class="forest_plot" id="forest_plot_authors"></table>
 <canvas class="forest_plot" id="forest_plot"></canvas>
 <table class="forest_plot" id="forest_plot_extra_fields"></table>
@@ -1401,17 +1587,6 @@ function formatMonths(numMonths) {
 </div>
 </div>
 </div>
-</div>
-
-<div id="statistical_summary">
-	<strong>Effect size</strong> <span id="effect_size"></span> <strong>Confidence interval</strong> <span id="confidence_interval"></span>
-</div>
-
-<div id="interface_extended_summary" class="wait_until_ready">
-	<button class="btn btn-outline-secondary" type="button" data-toggle="collapse" 
-		data-target="#extended_summary" aria-expanded="false" aria-controls="extended_summary">Extended summary</button>
-	<br><br>
-	<div class="collapse" id="extended_summary"></div>
 </div>
 
 <br><br>
@@ -1431,7 +1606,7 @@ function formatMonths(numMonths) {
 		<form id="enter_observations" name="enter_observations">
 		<button class="save_button" type="button" onclick="save_new_observation(false)">Save and clear</button>
 		<button class="save_button" type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
-		<p class="obligatory_explanation">Please fill out all fields. Some fields will be calculated automatically. Note: num_trials can be left open if not applicable. See the manual for more specific instructions on how to fill out each field.</p>
+		<p class="obligatory_explanation"></p>
 		<br><br>
 		<table id="field_list" class="table table-condensed table-hover">
 		<thead id = "field_list_header">
@@ -1446,7 +1621,7 @@ function formatMonths(numMonths) {
 		</table>
 		<button class="save_button" type="button" onclick="save_new_observation(false)">Save and clear</button>
 		<button class="save_button" type="button" onclick="save_new_observation(true)">Save and add new observation for the same study</button>
-		<p class="obligatory_explanation">Please fill out all fields. Some fields will be calculated automatically. Note: num_trials can be left open if not applicable. See the manual for more specific instructions on how to fill out each field.</p>
+		<p class="obligatory_explanation"></p>
 
 		</form>
 	</div>
