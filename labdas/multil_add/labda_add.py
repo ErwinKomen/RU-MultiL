@@ -25,6 +25,8 @@ data_keys = [
     "sd_age_L1", "age_min_L1", "age_max_L1", "n_2L1", "n_L1", "mean_2L1",
     "mean_L1", "SD_2L1", "SD_L1", "mean_difference", 
     "d", "g", "g_correct_sign", "g_var", "g_SE", "g_W", "num_trials",
+    # See issue #35.1 (=verified by authors)
+    "verified_by_administrators",
 
     # Newly added keys:
     "research_group", "sample"
@@ -33,7 +35,7 @@ data_keys = [
     # "t", "t_correct_sign",
 
     # Keys that are not checked:
-    # "email_address", "verified_by_administrators", "task_detailed_other",
+    # "email_address",  "task_detailed_other",
     # "linguistic_property_other"
     ]
 

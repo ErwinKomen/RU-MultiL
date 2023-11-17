@@ -10,6 +10,7 @@ forestPrepare <- function(dataset, filtervar="", predictor="", useDataFilter=FAL
   # dat <- dataset %>% as.tibble
   
   # Data klaarmaken voor de analyses
+  dataset[dataset == "NA" | dataset == "MD" | dataset == "?"] <- NA
   
   # De volgende code moet gerund worden voorafgaand aan de analyses (maar na het filteren, als er ergens op gefilterd is).
   dat <- dataset %>%
@@ -131,24 +132,49 @@ forestPrepare <- function(dataset, filtervar="", predictor="", useDataFilter=FAL
 
         # Add a column "predictor" to dat2
         dat2$predictor <- dat2[[predictor]]
-    
-        # ------- DEBUG ----------------------
-        print("Point #3b")
-        # ------------------------------------
 
-        # Hierna kunnen de modellen gerund worden, waarbij “predictor” de predictor is die de gebruiker geselecteerd heeft:
-        meta2a <- rma.mv(g_correct_sign, V0.6b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
-        model2a <- conf_int(meta2a, vcov = "CR2")
-    
-        # ------- DEBUG ----------------------
-        print("Point #3c")
-        # ------------------------------------
+        # issue #35.2 - determine whether mods = ~predictor should have something subtracted or not
+        if (predictor == "mean_age_2L1") {
+            # Do *NOT* subtract 1 from ~predictor in rma.mv
+            
+            # ------- DEBUG ----------------------
+            print("Point #3b")
+            # ------------------------------------
 
-        meta2b <- rma.mv(g_correct_sign, V0b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
-        model2b <- conf_int(meta2b, vcov = "CR2")
+            # Hierna kunnen de modellen gerund worden, waarbij “predictor” de predictor is die de gebruiker geselecteerd heeft:
+            meta2a <- rma.mv(g_correct_sign, V0.6b, data = dat2, mods = ~predictor, random = ~ 1|research_group/data_collection/observation)
+            model2a <- conf_int(meta2a, vcov = "CR2")
     
-        meta2c <- rma.mv(g_correct_sign, V0.95b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
-        model2c <- conf_int(meta2c, vcov = "CR2")
+            # ------- DEBUG ----------------------
+            print("Point #3c")
+            # ------------------------------------
+
+            meta2b <- rma.mv(g_correct_sign, V0b, data = dat2, mods = ~predictor, random = ~ 1|research_group/data_collection/observation)
+            model2b <- conf_int(meta2b, vcov = "CR2")
+    
+            meta2c <- rma.mv(g_correct_sign, V0.95b, data = dat2, mods = ~predictor, random = ~ 1|research_group/data_collection/observation)
+            model2c <- conf_int(meta2c, vcov = "CR2")
+        } else {
+            # *DO* subtract 1 from ~predictor in rma.mv
+            # ------- DEBUG ----------------------
+            print("Point #3b")
+            # ------------------------------------
+
+            # Hierna kunnen de modellen gerund worden, waarbij “predictor” de predictor is die de gebruiker geselecteerd heeft:
+            meta2a <- rma.mv(g_correct_sign, V0.6b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
+            model2a <- conf_int(meta2a, vcov = "CR2")
+    
+            # ------- DEBUG ----------------------
+            print("Point #3c")
+            # ------------------------------------
+
+            meta2b <- rma.mv(g_correct_sign, V0b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
+            model2b <- conf_int(meta2b, vcov = "CR2")
+    
+            meta2c <- rma.mv(g_correct_sign, V0.95b, data = dat2, mods = ~predictor -1, random = ~ 1|research_group/data_collection/observation)
+            model2c <- conf_int(meta2c, vcov = "CR2")
+        }
+    
     
         # ------- DEBUG ----------------------
         print("Point #4")
@@ -157,7 +183,8 @@ forestPrepare <- function(dataset, filtervar="", predictor="", useDataFilter=FAL
         # LET OP: als de gebruiker target_or_child_system heeft gekozen als variabele, 
         #   wordt naast target_or_child_system ook de predictor surface_overlap_author toegevoegd 
         #   én de interactie tussen deze twee variabelen:
-        if (filtervar == "target_or_child") {
+        # issue #35: not 'filtervar' but 'predictor'
+        if (predictor == "target_or_child") {
           meta2a <- rma.mv(g_correct_sign, V0.6b, data = dat2, mods =~target_or_child_system*surface_overlap_author -1, random = ~ 1|research_group/data_collection/observation)
           ## Warning: Rows with NAs omitted from model fitting.
           model2a <- conf_int(meta2a, vcov = "CR2")
