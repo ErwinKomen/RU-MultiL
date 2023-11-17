@@ -120,7 +120,7 @@ var explanationPerFeature = {
 	'language_home' : 'indicates which language is spoken at the bilingual children\'s home',
 	'societal_language' : 'indicates which language is spoken in the society the bilingual children live in (outside the home)',
 							//- so typically it is the language of the country the child lives in',
-	'CLI_predicted' : 'indicates for which observations cross-linguistic influence is predicted a priori to the analyses',
+	'CLI_predicted' : 'please read the manual before filling out this field',
 	'predicted_direction_difference_2L1' : //'indicates for those cases for which cross-linguistic influence is predicted 
 									'whether the bilingual group is predicted to score higher or lower than the control group on the dependent variable',
 	'mean_age_2L1' : 'mean age of bilinguals in months',
@@ -153,7 +153,7 @@ var explanationPerFeature = {
 
 var filter_features = ['target_language', 'task_type', 'task_detailed', 'linguistic_property',
 						'target_or_child_system', 'dominance', 'language_home',
-						'societal_language'];
+						'societal_language','surface_overlap_author'];
 var add_other_features = ['task_detailed', 'linguistic_property'];
 var choice_features = ['task_type', 'task_detailed', 'linguistic_property',
 						'target_or_child_system', 'dominance', 'language_home',
@@ -161,8 +161,18 @@ var choice_features = ['task_type', 'task_detailed', 'linguistic_property',
 						'predicted_direction_difference_2L1'];
 var exclude_features = ['verified_by_administrators','linguistic_property_other','research_group','sample'];
 
-var surface_overlap_author_choices = ['surface_overlap', 'no_surface_overlap', 'not_discussed', 'unknown'];
-var target_or_child_system_choices = ['target','child','both']
+var choices_per_feature = {}
+choices_per_feature['published'] = ['yes','no'];
+choices_per_feature['task_type'] = ["elicited_production", "judgements", "offline_comprehension", "other", "online_comprehension/processing"];
+choices_per_feature['task_detailed'] = ["acceptability_judgements", "forced_choice", "grammaticality_judgements", "grammaticality/acceptability_judgements", "picture_description", "picture_selection", "sentence_repetition", "text_revision", "truth_value_judgements", "other", "eye-tracking_visual_world", "eye-tracking_reading", "self-paced_listening", "self-paced_reading", "EEG", "fMRI", "other"];
+choices_per_feature['surface_overlap_author'] = ['surface_overlap', 'no_surface_overlap', 'not_discussed', 'unknown'];
+choices_per_feature['target_or_child_system'] = ['target','child','both',"NA"];
+choices_per_feature['linguistic_property'] = ["adjective_order", "adverb_order", "clitic_order", "compound_order", "genericity_specificity", "modified_noun", "morpheme_marker", "null_overt_object", "null_overt_subject", "object_pronoun_order", "possessor_order", "pseudo_stripping", "quantifier", "scrambled_indefinites", "subject_order", "that_trace", "verb_order", "wh_order", "other"];
+choices_per_feature['dominance'] = ["balanced", "mixed", "other_language", "target_language","?"];
+choices_per_feature['language_home'] = ["balanced", "mixed", "other_language", "target_language","?"];
+choices_per_feature['societal_language'] = ["balanced", "mixed", "other_language", "target_language"];
+choices_per_feature['CLI_predicted'] = ['no','yes'];
+choices_per_feature['predicted_direction_difference_2L1'] = ["equal", "higher", "higher_or_lower", "lower"];
 
 var numerical_features = [];
 
@@ -326,6 +336,7 @@ function get_forest_data(filtered)
      // UNCLEAN: data = { calling: "usedatafilter", dataset: dataset };
      // Using CLEANED data
      // data = { calling: "usedatafilter", dataset: dsetclean };
+	 console.log(dsetclean);
      data = { dataset: dsetclean};
 
 	 var usingPredictor = false;
@@ -769,17 +780,26 @@ function save_new_observation(clear_mean_and_stdev_only) {
 }
 
 function create_entry_form() {
+
+	var autoCalculatedFields = ['d', 'g', 'g_correct_sign', 'g_var', 'g_SE', 'g_W', 'mean_difference'];
 	var field_table_body = '#field_list_body';
 
-	for (j=1; j < dataset_fields.length; j++) {
+	var entry_form_fields = dataset_fields.slice();
+
+	//Hardcode two fields behind each other
+	entry_form_fields.splice( entry_form_fields.indexOf('task_detailed') + 1, 0, 'task_detailed_other'); 
+	console.log(entry_form_fields.pop());
+	console.log(entry_form_fields.pop());
+
+	for (j=1; j < entry_form_fields.length; j++) {
 		// j starts at 1 to skip field 'observation'
-		var uitleg_hover = explanationPerFeature[dataset_fields[j]];
-		var field_name = dataset_fields[j];
-		var this_field_id = 'id_field_' + dataset_fields[j];
-		var this_key_id = 'id_key_' + dataset_fields[j];
-		var this_value_id = 'id_value_' + dataset_fields[j];
+		var uitleg_hover = explanationPerFeature[entry_form_fields[j]];
+		var field_name = entry_form_fields[j];
+		var this_field_id = 'id_field_' + entry_form_fields[j];
+		var this_key_id = 'id_key_' + entry_form_fields[j];
+		var this_value_id = 'id_value_' + entry_form_fields[j];
 		var row = $("<tr>", { 'class':  this_field_id, 'id': this_field_id });
-		var key = $("<th>", { 'class':  this_key_id, 'id': this_key_id, 'text': dataset_fields[j] });
+		var key = $("<th>", { 'class':  this_key_id, 'id': this_key_id, 'text': entry_form_fields[j] });
 		row.append(key);
 		row.append("</th>");
 		var key_value = $("<td>", { 'class':  this_value_id, 'id': this_value_id });
@@ -790,7 +810,7 @@ function create_entry_form() {
 		}
 		
 		else if (choice_features.includes(field_name)) { 
-			var choices = get_choices_from_filter_feature(field_name);
+			var choices = get_choices_from_filter_feature(field_name,false);
 			choices = get_unique_choices(choices);
 
 			if (add_other_features.includes(field_name))
@@ -798,8 +818,8 @@ function create_entry_form() {
 				choices.push('other');
 			}
 
-			key_input = $("<select>", { 'id': 'name_' + dataset_fields[j], 
-												'name': 'name_' + dataset_fields[j], 
+			key_input = $("<select>", { 'id': 'name_' + entry_form_fields[j], 
+												'name': 'name_' + entry_form_fields[j], 
 												'value': "",
 												'class': "custom-select" });
 			var placeholder_option = $("<option />", { value: "", text: uitleg_hover});
@@ -811,15 +831,22 @@ function create_entry_form() {
 			};
 			key_input.append("</select>");
 		} else {
-			//var uitleg_hover = explanationPerFeature[dataset_fields[j]];
+			//var uitleg_hover = explanationPerFeature[entry_form_fields[j]];
 			//console.log(uitleg_hover);
-			key_input = $("<input>", { 'id': 'name_' + dataset_fields[j], 
-										'name': 'name_' + dataset_fields[j], 
+			key_input = $("<input>", { 'id': 'name_' + entry_form_fields[j], 
+										'name': 'name_' + entry_form_fields[j], 
 										'size': '110',
 										'value': "",
 										'placeholder': uitleg_hover,
-										'type': 'text' });
+										'type': 'text'});
 		};
+
+		if (autoCalculatedFields.includes(entry_form_fields[j]))
+		{
+			console.log(entry_form_fields[j] + ' is auto calculated');
+			key_input.attr('readonly', true);
+		}
+
 		key_value.append(key_input);
 		key_value.append("</td>");
 		row.append(key_value);
@@ -837,9 +864,8 @@ function all_obligatory_fields_filled()
 						'bilingual_group','monolingual_group','surface_overlap_author',
 						'target_or_child_system','dominance','language_home',
 						'societal_language','CLI_predicted',
-						'predicted_direction_difference_2L1','mean_age_2L1','sd_age_2L1',
-						'age_min_2L1','age_max_2L1','mean_age_L1','sd_age_L1','age_min_L1',
-						'age_max_L1','n_2L1','n_L1', 'mean_2L1','mean_L1','SD_2L1','SD_L1',
+						'predicted_direction_difference_2L1','mean_age_2L1','mean_age_L1',
+						'n_2L1','n_L1', 'mean_2L1','mean_L1','SD_2L1','SD_L1',
 						'mean_difference','d','g','g_correct_sign','g_var','g_SE','g_W',
 						'email_address'
 					    ];
@@ -1029,8 +1055,8 @@ $(document).ready(function() {
 		 $('#mean_age_slider').slider({
 			range: true,
 			min: 0,
-			max: 120,
-			values: [42,118],
+			max: 216,
+			values: [42,216],
 			slide: function (event, ui) {
 				var from = ui.values[0];
 				var to = ui.values[1];
@@ -1218,35 +1244,42 @@ $(document).ready(function() {
 		$("#result_size_indicator").html(studies.size + " studies, " + filtered_observation_ids.length + " observations");			
 	};
 
-	function get_choices_from_filter_feature(feature) 
+	function get_choices_from_filter_feature(feature, exclude_unknown_and_na=false) 
 	{
-		if (feature == 'surface_overlap_author')
+		if (feature == 'target_language')
 		{
-			return surface_overlap_author_choices;
-		}
-		else if (feature == 'target_or_child_system')
-		{
-			return target_or_child_system_choices;
+			return dataset.map(d => d[feature]);
 		}
 
-		var choices = dataset.map(d => d[feature]);
-		return choices
+		// Copy the array using slice
+		let copiedArray = choices_per_feature[feature].slice();
+
+		// Remove 'NA' and 'unknown' from the copied array
+		if (exclude_unknown_and_na)
+		{
+			copiedArray = copiedArray.filter(choice => choice !== 'NA' && choice !== '?');
+		}
+
+		return copiedArray;
 	};
 
 	function get_unique_choices(choices) {
 		var unique_choices = [];
 		choices.forEach((element) => {
-			if (!unique_choices.includes(element) && !element.includes('?')) {
+			if (!unique_choices.includes(element)) {
 				unique_choices.push(element);
 			}
 		});
+
+		//Sort alphabetically
+		unique_choices.sort(function(a, b) {return a.localeCompare(b);});
 		return unique_choices
 	};
 
 	function set_up_filter_choices() {
 		var filter_choices_dict = {};
 		for (key in filter_features) {
-			var choices = get_choices_from_filter_feature(filter_features[key]);
+			var choices = get_choices_from_filter_feature(filter_features[key],true);
 			filter_choices_dict[filter_features[key]] = get_unique_choices(choices)
 		};
 		var filter_observations = $("#filter_observations");
@@ -1387,7 +1420,18 @@ function exportToCsv(filename, rows, headers = false) {
             if(i == 0 && j == 0 && headers == true){
                 var ii = 0;
                 $.each(rows[i], function( index, value ) {
-                    var fieldName = index === null ? '' : index.toString();
+
+					var fieldName;
+
+					if (index == null)
+					{
+						fieldName = '';
+					}
+					else
+					{
+						fieldName = index.toString();
+					}
+
                     var fieldResult = fieldName.replace(/"/g, '""');
                     if (fieldResult.search(/("|,|\n)/g) >= 0){
                         fieldResult = '"' + fieldResult + '"';
@@ -1404,8 +1448,19 @@ function exportToCsv(filename, rows, headers = false) {
             }
 			
 			console.log(row, j);
-            var innerValue = row[j] === null ? '' : row[j].toString();
-            if (row[j] instanceof Date) {
+
+			var innerValue;
+
+			if (row[j] == null)
+			{
+				innerValue = '';
+			}
+			else
+			{
+				innerValue = row[j].toString();
+			}
+
+			if (row[j] instanceof Date) {
                 innerValue = row[j].toLocaleString();
             };
             var result = innerValue.replace(/"/g, '""');
@@ -1479,23 +1534,28 @@ function formatMonths(numMonths) {
 	<div class="col custom-control custom-control-inline" id="filter_linguistic_property" >
 
 	</div>
+</div>
+<div class="form-row">
 	<div class="col custom-control custom-control-inline" id="filter_task_detailed" >
 
 	</div>
-</div>
-<div class="form-row">
+
 	<div class="col custom-control custom-control-inline" id="filter_target_or_child_system" >
 
 	</div>
 	<div class="col custom-control custom-control-inline" id="filter_dominance" >
 
 	</div>
+</div>
+<div class="form-row">
 	<div class="col custom-control custom-control-inline" id="filter_language_home" >
 
 	</div>
 	<div class="col custom-control custom-control-inline" id="filter_societal_language" >
 
 	</div>
+
+	<div class="col custom-control custom-control-inline" id="filter_surface_overlap_author" ></div>
 </div>
 
 <div class="basic_filter">
@@ -1598,7 +1658,7 @@ function formatMonths(numMonths) {
 <br><br><br>
 <div id="interface_new_observations" class="wait_until_ready">
 	<h4>New Observations</h4>
-	<br><br>
+	<p> We do not receive an automatic message when you have added new data, so please send a message to the creators of this web app when you submitted new observations: Chantal van Dijk (c.vandijk@tu-braunschweig.de), Elise van Wonderen (e.vanwonderen@uva.nl) and Sharon Unsworth (s.unsworth@ru.nl).</p>
 	<button class="btn btn-outline-secondary" type="button" data-toggle="collapse" 
 		data-target="#new_observations" aria-expanded="false" aria-controls="new_observations">Enter Data</button>
 	<br><br>
