@@ -184,7 +184,7 @@ forestPrepare <- function(dataset, filtervar="", predictor="", useDataFilter=FAL
         #   wordt naast target_or_child_system ook de predictor surface_overlap_author toegevoegd 
         #   én de interactie tussen deze twee variabelen:
         # issue #35: not 'filtervar' but 'predictor'
-        if (predictor == "target_or_child") {
+        if (predictor == "target_or_child_system") {
           meta2a <- rma.mv(g_correct_sign, V0.6b, data = dat2, mods =~target_or_child_system*surface_overlap_author -1, random = ~ 1|research_group/data_collection/observation)
           ## Warning: Rows with NAs omitted from model fitting.
           model2a <- conf_int(meta2a, vcov = "CR2")
