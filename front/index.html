@@ -668,19 +668,26 @@ function fill_rows(dataset, dataset_fields) {
 		var this_dataset = dataset[j];
 		var this_row = [];
 
+		var in_paper = this_dataset['observation'] <= 198;
+
+		if (!in_paper && !this_dataset['verified_by_administrators'])
+		{
+			continue;
+		}
+
 		for (key of dataset_fields) 
 		{
 			var this_value;
 			
 			if (key == 'in_paper')
 			{
-				this_value = this_dataset['observation'] <= 198 ? 'yes' : 'no';
+				this_value = in_paper ? 'yes' : 'no';
 			}
 			else
 			{
 				this_value = this_dataset[key];
 			}
-			
+
 			this_row.push(this_value);
 		};
 		rows.push(this_row);
@@ -921,7 +928,8 @@ function unique_together_fields_are_unique_together()
 
 function update_save_button_status()
 {
-	if (!unique_together_fields_are_unique_together())
+	//temp disabled
+	if (false && !unique_together_fields_are_unique_together())
 	{
 		$('button.save_button').addClass('disabled');
 		$('p.obligatory_explanation').show();

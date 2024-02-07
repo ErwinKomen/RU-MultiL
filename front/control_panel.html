@@ -114,6 +114,11 @@
                     value = parseFloat(value);
                 }
 
+                if (key == 'observation')
+                {
+                    value = parseInt(value);
+                }
+
                 dataset[id][key] = value;
             });
 
@@ -121,6 +126,7 @@
             {
                 var key = $(this).attr('name');
                 var value = $(this).val();
+
                 dataset[id][key] = value;
             });
 
@@ -133,7 +139,10 @@
         {
             aws_url = 'https://rkxy8021l6.execute-api.eu-central-1.amazonaws.com/Prod/delete';
             $.post(aws_url, JSON.stringify({'edit_key': 'MULTILEDITINGRIGHTS', 
-                                            'observations':[parseInt(dataset[id]['observation'])]}));
+                                            'observations':[parseInt(dataset[id]['observation'])]}), function(data)
+                                            {
+                                                location.reload();
+                                            });
         });
     });
 
