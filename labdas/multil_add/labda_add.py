@@ -29,7 +29,10 @@ data_keys = [
     "verified_by_administrators",
 
     # Newly added keys:
-    "research_group", "sample"
+    "research_group", "sample",
+
+    # New keys added via issue #37
+    "comments", "dependant_variable"
 
     # Obsolete keys:
     # "t", "t_correct_sign",
