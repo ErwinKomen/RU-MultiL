@@ -32,7 +32,7 @@ data_keys = [
     "research_group", "sample",
 
     # New keys added via issue #37
-    "comments", "dependant_variable"
+    "comments", "dependent_variable"
 
     # Obsolete keys:
     # "t", "t_correct_sign",
